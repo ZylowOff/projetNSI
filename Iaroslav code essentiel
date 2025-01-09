@@ -6,11 +6,11 @@ import sys
 pygame.init()
 
 # Dimensions de la fenêtre
-LARGEUR = 800
-HAUTEUR = 600
-TAILLE_CASE = 50
+LARGEUR = 1500 
+HAUTEUR = 900  
+TAILLE_CASE = 50 
 
-# Couleurs
+# Couleurs utilisées dans le jeu
 NOIR = (0, 0, 0)
 BLANC = (255, 255, 255)
 GRIS = (200, 200, 200)
@@ -19,28 +19,27 @@ SORTIE = (0, 255, 0)
 MUR = (26, 0, 8)
 SOL = (115, 109, 115)
 CLE = (255, 223, 0)
-ROUGE = (255, 0, 0)
 
-# Création de la fenêtre
+# Création de la fenêtre principale
 fenetre = pygame.display.set_mode((LARGEUR, HAUTEUR))
 pygame.display.set_caption("Jeu Hôpital")
 
-# Horloge pour contrôler le FPS
+# Horloge pour contrôler les FPS
 horloge = pygame.time.Clock()
 
-# Nombre de clés
-NOMBRE_CLES = 3
-cles_collectees = 0
+# Paramètres de jeu
+NOMBRE_CLES = 3  # Nombre de clés à collecter pour gagner
+cles_collectees = 0  # Compteur de clés collectées
 
-# Génération d'un labyrinthe aléatoire
+# Fonction pour générer un labyrinthe aléatoire
 def generer_hopital(nb_lignes, nb_colonnes):
-    nb_lignes = (nb_lignes // 3) * 3 + 1
+    nb_lignes = (nb_lignes // 3) * 3 + 1  # Ajuste les dimensions pour garantir un labyrinthe valide
     nb_colonnes = (nb_colonnes // 3) * 3 + 1
     hopital = [["#" for _ in range(nb_colonnes)] for _ in range(nb_lignes)]
 
     def voisins(x, y):
         directions = [(6, 0), (-6, 0), (0, 6), (0, -6)]
-        random.shuffle(directions)
+        random.shuffle(directions)  # Mélange pour générer des labyrinthes variés
         return [
             (x + dx, y + dy)
             for dx, dy in directions
@@ -52,7 +51,6 @@ def generer_hopital(nb_lignes, nb_colonnes):
             for j in range(-1, 2):
                 if 0 <= y + i < nb_lignes and 0 <= x + j < nb_colonnes:
                     hopital[y + i][x + j] = " "
-
         for nx, ny in voisins(x, y):
             if hopital[ny][nx] == "#":
                 for i in range(-1, 2):
@@ -61,57 +59,54 @@ def generer_hopital(nb_lignes, nb_colonnes):
                             hopital[(y + ny) // 2 + i][(x + nx) // 2 + j] = " "
                 creuser(nx, ny)
 
-    creuser(nb_colonnes // 2, nb_lignes // 2)
+    creuser(nb_colonnes // 2, nb_lignes // 2)  # Commence à creuser au centre du labyrinthe
 
-    # Ajouter la sortie
+    # Ajoute une sortie aléatoire parmi les coins disponibles
     coins = [(0, 0), (0, nb_colonnes - 1), (nb_lignes - 1, 0), (nb_lignes - 1, nb_colonnes - 1)]
     random.shuffle(coins)
-
     for sortie_y, sortie_x in coins:
         if hopital[sortie_y][sortie_x] == " ":
-            hopital[sortie_y][sortie_x] = "S"
+            hopital[sortie_y][sortie_x] = "S"  # Marque la sortie
             break
 
     return hopital
 
-# Placement des clés
+# Fonction pour placer les clés dans le labyrinthe
 def placer_cles(hopital, nombre_cles):
     cles = []
     cases_vides = [(i, j) for i, ligne in enumerate(hopital) for j, case in enumerate(ligne) if case == " "]
     for _ in range(nombre_cles):
         x, y = random.choice(cases_vides)
         cles.append((x, y))
-        hopital[x][y] = "C"
+        hopital[x][y] = "C"  # Ajoute une clé à cet emplacement
         cases_vides.remove((x, y))
     return cles
 
-# Dessin de l'hôpital
+# Fonction pour afficher l'hôpital
 def dessiner_hopital(hopital, joueur_pos, camera_offset):
-    fenetre.fill(NOIR)
+    fenetre.fill(NOIR)  # Fond noir
     joueur_x, joueur_y = joueur_pos
     for i, ligne in enumerate(hopital):
         for j, case in enumerate(ligne):
-            distance_x = abs(j - joueur_x)
-            distance_y = abs(i - joueur_y)
-            if distance_x <= 4 and distance_y <= 4:
-                x = j * TAILLE_CASE - camera_offset[0]
-                y = i * TAILLE_CASE - camera_offset[1]
-                if case == "#":
-                    pygame.draw.rect(fenetre, MUR, (x, y, TAILLE_CASE, TAILLE_CASE))
-                elif case == "S":
-                    pygame.draw.rect(fenetre, SORTIE, (x, y, TAILLE_CASE, TAILLE_CASE))
-                elif case == " ":
-                    pygame.draw.rect(fenetre, SOL, (x, y, TAILLE_CASE, TAILLE_CASE))
-                elif case == "C":
-                    pygame.draw.rect(fenetre, CLE, (x, y, TAILLE_CASE, TAILLE_CASE))
-
+            x = j * TAILLE_CASE - camera_offset[0]
+            y = i * TAILLE_CASE - camera_offset[1]
+            if case == "#":
+                pygame.draw.rect(fenetre, MUR, (x, y, TAILLE_CASE, TAILLE_CASE))
+            elif case == "S":
+                pygame.draw.rect(fenetre, SORTIE, (x, y, TAILLE_CASE, TAILLE_CASE))
+            elif case == " ":
+                pygame.draw.rect(fenetre, SOL, (x, y, TAILLE_CASE, TAILLE_CASE))
+            elif case == "C":
+                pygame.draw.rect(fenetre, CLE, (x, y, TAILLE_CASE, TAILLE_CASE))
+    # Dessine le joueur
     joueur_ecran_x = joueur_x * TAILLE_CASE - camera_offset[0]
     joueur_ecran_y = joueur_y * TAILLE_CASE - camera_offset[1]
     pygame.draw.rect(fenetre, JOUEUR, (joueur_ecran_x, joueur_ecran_y, TAILLE_CASE, TAILLE_CASE))
 
-    # Afficher le compteur de clés
+    # Affiche le compteur de clés
     texte = pygame.font.Font(None, 40).render(f"Clés: {cles_collectees}/{NOMBRE_CLES}", True, BLANC)
     fenetre.blit(texte, (10, 10))
+
 
 # Vérification de la validité du déplacement
 def deplacement_valide(hopital, pos):
@@ -130,6 +125,7 @@ def afficher_victoire():
     pygame.time.delay(3000)
 
 # Afficher le menu principal
+# Afficher le menu principal
 def afficher_menu():
     while True:
         fenetre.fill(NOIR)
@@ -139,8 +135,8 @@ def afficher_menu():
         fenetre.blit(titre, (LARGEUR // 2 - titre.get_width() // 2, 100))
 
         # Boutons
-        bouton_jouer = pygame.Rect(LARGEUR // 2 - 100, 250, 200, 60)
-        bouton_quitter = pygame.Rect(LARGEUR // 2 - 100, 350, 200, 60)
+        bouton_jouer = pygame.Rect(LARGEUR // 2 - 150, 250, 300, 80)  # Bouton agrandi
+        bouton_quitter = pygame.Rect(LARGEUR // 2 - 150, 400, 300, 80)  # Bouton agrandi
         pygame.draw.rect(fenetre, GRIS, bouton_jouer)
         pygame.draw.rect(fenetre, GRIS, bouton_quitter)
 
@@ -158,6 +154,43 @@ def afficher_menu():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if bouton_jouer.collidepoint(event.pos):
                     return
+                if bouton_quitter.collidepoint(event.pos):
+                    pygame.quit()
+                    sys.exit()
+
+# Afficher le menu pause
+def afficher_menu_pause():
+    while True:
+        fenetre.fill(NOIR)
+
+        # Boutons
+        bouton_continuer = pygame.Rect(LARGEUR // 2 - 150, 200, 300, 80)  
+        bouton_recommencer = pygame.Rect(LARGEUR // 2 - 150, 350, 300, 80) 
+        bouton_quitter = pygame.Rect(LARGEUR // 2 - 150, 500, 300, 80)  
+
+        pygame.draw.rect(fenetre, GRIS, bouton_continuer)
+        pygame.draw.rect(fenetre, GRIS, bouton_recommencer)
+        pygame.draw.rect(fenetre, GRIS, bouton_quitter)
+
+        texte_continuer = pygame.font.Font(None, 50).render("Continuer", True, BLANC)
+        texte_recommencer = pygame.font.Font(None, 50).render("Recommencer", True, BLANC)
+        texte_quitter = pygame.font.Font(None, 50).render("Quitter", True, BLANC)
+
+        fenetre.blit(texte_continuer, (bouton_continuer.centerx - texte_continuer.get_width() // 2, bouton_continuer.centery - texte_continuer.get_height() // 2))
+        fenetre.blit(texte_recommencer, (bouton_recommencer.centerx - texte_recommencer.get_width() // 2, bouton_recommencer.centery - texte_recommencer.get_height() // 2))
+        fenetre.blit(texte_quitter, (bouton_quitter.centerx - texte_quitter.get_width() // 2, bouton_quitter.centery - texte_quitter.get_height() // 2))
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if bouton_continuer.collidepoint(event.pos):
+                    return "continuer"
+                if bouton_recommencer.collidepoint(event.pos):
+                    return "recommencer"
                 if bouton_quitter.collidepoint(event.pos):
                     pygame.quit()
                     sys.exit()
@@ -207,6 +240,10 @@ cles = placer_cles(hopital, NOMBRE_CLES)
 joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
 camera_offset = [0, 0]
 
+# Vitesse de déplacement
+vitesse = 3
+compteur_deplacement = 0
+
 # Boucle principale
 afficher_menu()
 running = True
@@ -224,18 +261,22 @@ while running:
                     cles_collectees = 0
 
     touches = pygame.key.get_pressed()
-    nouvelle_pos = joueur_pos[:]
-    if touches[pygame.K_UP]:
-        nouvelle_pos[1] -= 1
-    elif touches[pygame.K_DOWN]:
-        nouvelle_pos[1] += 1
-    elif touches[pygame.K_LEFT]:
-        nouvelle_pos[0] -= 1
-    elif touches[pygame.K_RIGHT]:
-        nouvelle_pos[0] += 1
+    compteur_deplacement += 1
+    if compteur_deplacement >= vitesse:
+        nouvelle_pos = joueur_pos[:]
+        if touches[pygame.K_UP]:
+            nouvelle_pos[1] -= 1
+        elif touches[pygame.K_DOWN]:
+            nouvelle_pos[1] += 1
+        elif touches[pygame.K_LEFT]:
+            nouvelle_pos[0] -= 1
+        elif touches[pygame.K_RIGHT]:
+            nouvelle_pos[0] += 1
 
-    if deplacement_valide(hopital, nouvelle_pos):
-        joueur_pos = nouvelle_pos
+        if deplacement_valide(hopital, nouvelle_pos):
+            joueur_pos = nouvelle_pos
+
+        compteur_deplacement = 0
 
     # Collecte des clés
     if hopital[joueur_pos[1]][joueur_pos[0]] == "C":

@@ -6,9 +6,9 @@ import sys
 pygame.init()
 
 # Dimensions de la fenêtre
-LARGEUR = 1500 
-HAUTEUR = 900  
-TAILLE_CASE = 50 
+LARGEUR = 1500  # Largeur de la fenêtre
+HAUTEUR = 900   # Hauteur de la fenêtre
+TAILLE_CASE = 50  # Taille d'une case dans le labyrinthe
 
 # Couleurs utilisées dans le jeu
 NOIR = (0, 0, 0)
@@ -61,15 +61,21 @@ def generer_hopital(nb_lignes, nb_colonnes):
 
     creuser(nb_colonnes // 2, nb_lignes // 2)  # Commence à creuser au centre du labyrinthe
 
-    # Ajoute une sortie aléatoire parmi les coins disponibles
-    coins = [(0, 0), (0, nb_colonnes - 1), (nb_lignes - 1, 0), (nb_lignes - 1, nb_colonnes - 1)]
-    random.shuffle(coins)
-    for sortie_y, sortie_x in coins:
+    # Ajoute une sortie sur un bord aléatoire
+    bords = [
+        (0, random.randint(1, nb_colonnes - 2)),  # Haut
+        (nb_lignes - 1, random.randint(1, nb_colonnes - 2)),  # Bas
+        (random.randint(1, nb_lignes - 2), 0),  # Gauche
+        (random.randint(1, nb_lignes - 2), nb_colonnes - 1)  # Droite
+    ]
+    random.shuffle(bords)
+    for sortie_y, sortie_x in bords:
         if hopital[sortie_y][sortie_x] == " ":
             hopital[sortie_y][sortie_x] = "S"  # Marque la sortie
             break
 
     return hopital
+
 
 # Fonction pour placer les clés dans le labyrinthe
 def placer_cles(hopital, nombre_cles):
@@ -295,4 +301,4 @@ while running:
     pygame.display.flip()
     horloge.tick(60)
 
-pygame.quit()
+pygame.quit()   

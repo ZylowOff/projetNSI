@@ -3,8 +3,13 @@ Idées pour le futur:
   Amélioter vitesse déplacement // fait
   Les ennemies // 
   Vision du personnage // fait
-  Recenter l'affichage du menu //
+  Recentrer l'affichage du menu //
   Generation de la map (pas totalement) // 
   L'histoire // 
-  Graphisme //  
-  OST //  
+  Graphisme : 
+      clés //
+      enemis //
+      map //
+  OST :
+      musique // 
+      effets sonores // 

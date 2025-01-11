@@ -33,8 +33,8 @@ NOMBRE_CLES = 3  # Nombre de clés à collecter pour gagner
 cles_collectees = 0  # Compteur de clés collectées
 
 # Paramètres de la vision
-cone_angle = 70  # Angle du cône de vision en degrés
-cone_length = 400  # Longueur du cône de vision
+cone_angle = 60  # Angle du cône de vision en degrés
+cone_length = 350  # Longueur du cône de vision
 
 def draw_vision_cone(surface, position, angle, length):
     x, y = position
@@ -72,10 +72,11 @@ def draw_vision_cone(surface, position, angle, length):
     # Découpe un trou dans le masque pour le cône de vision
     pygame.draw.polygon(masque, (0, 0, 0, 0), points)  # Surface transparente pour le cône
     surface.blit(masque, (0, 0))  # Applique le masque sur l'écran
+
 def appliquer_masque_vision(surface, position, angle, length):
     # Crée un masque couvrant toute la fenêtre
     masque = pygame.Surface((LARGEUR, HAUTEUR), pygame.SRCALPHA)
-    masque.fill((0, 0, 0, 255))  # Remplit le masque de noir opaque
+    masque.fill((0,0,0,200))  # Remplit le masque de noir opaque
 
     x, y = position
     start_angle = math.radians(angle - cone_angle / 2)  # Début du cône
@@ -95,6 +96,29 @@ def appliquer_masque_vision(surface, position, angle, length):
 
     # Applique le masque sur l'écran
     surface.blit(masque, (0, 0))
+
+
+def dessiner_zone_vision_circulaire(surface, position, rayon):
+    x, y = position
+    for i in range(-rayon, rayon+1):  # Parcourt chaque case autour du joueur
+        for j in range(-rayon, rayon+1):
+            # Calcule la distance du joueur à la case
+            distance = math.sqrt(i**2 + j**2)
+            if distance <= rayon:
+                # Si la case est dans le rayon, on la dessine si elle est accessible
+                if 0 <= x + i < len(hopital[0]) and 0 <= y + j < len(hopital):
+                    case = hopital[y + j][x + i]
+                    case_x = (x + i) * TAILLE_CASE
+                    case_y = (y + j) * TAILLE_CASE
+                    # Dessiner la case en fonction de son type
+                    if case == "#":  # Mur
+                        pygame.draw.rect(surface, MUR, (case_x, case_y, TAILLE_CASE, TAILLE_CASE))
+                    elif case == "S":  # Sortie
+                        pygame.draw.rect(surface, SORTIE, (case_x, case_y, TAILLE_CASE, TAILLE_CASE))
+                    elif case == "C":  # Clé
+                        pygame.draw.rect(surface, CLE, (case_x, case_y, TAILLE_CASE, TAILLE_CASE))
+                    elif case == " ":  # Sol
+                        pygame.draw.rect(surface, SOL, (case_x, case_y, TAILLE_CASE, TAILLE_CASE))
 
 
 def generer_hopital(nb_lignes, nb_colonnes):
@@ -196,7 +220,6 @@ def afficher_victoire():
     pygame.time.delay(3000)
 
 # Afficher le menu principal
-# Afficher le menu principal
 def afficher_menu():
     while True:
         fenetre.fill(NOIR)
@@ -266,42 +289,7 @@ def afficher_menu_pause():
                     pygame.quit()
                     sys.exit()
 
-# Afficher le menu pause
-def afficher_menu_pause():
-    while True:
-        fenetre.fill(NOIR)
 
-        # Boutons
-        bouton_continuer = pygame.Rect(LARGEUR // 2 - 100, 200, 200, 60)
-        bouton_recommencer = pygame.Rect(LARGEUR // 2 - 100, 300, 200, 60)
-        bouton_quitter = pygame.Rect(LARGEUR // 2 - 100, 400, 200, 60)
-
-        pygame.draw.rect(fenetre, GRIS, bouton_continuer)
-        pygame.draw.rect(fenetre, GRIS, bouton_recommencer)
-        pygame.draw.rect(fenetre, GRIS, bouton_quitter)
-
-        texte_continuer = pygame.font.Font(None, 50).render("Continuer", True, BLANC)
-        texte_recommencer = pygame.font.Font(None, 50).render("Recommencer", True, BLANC)
-        texte_quitter = pygame.font.Font(None, 50).render("Quitter", True, BLANC)
-
-        fenetre.blit(texte_continuer, (bouton_continuer.centerx - texte_continuer.get_width() // 2, bouton_continuer.centery - texte_continuer.get_height() // 2))
-        fenetre.blit(texte_recommencer, (bouton_recommencer.centerx - texte_recommencer.get_width() // 2, bouton_recommencer.centery - texte_recommencer.get_height() // 2))
-        fenetre.blit(texte_quitter, (bouton_quitter.centerx - texte_quitter.get_width() // 2, bouton_quitter.centery - texte_quitter.get_height() // 2))
-
-        pygame.display.flip()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if bouton_continuer.collidepoint(event.pos):
-                    return "continuer"
-                if bouton_recommencer.collidepoint(event.pos):
-                    return "recommencer"
-                if bouton_quitter.collidepoint(event.pos):
-                    pygame.quit()
-                    sys.exit()
 
 # Génération initiale
 NB_LIGNES = (HAUTEUR // TAILLE_CASE) * 10
@@ -316,8 +304,11 @@ vitesse = 1
 compteur_deplacement = 10
 
 # Initialisation de l'angle de vue avec une valeur par défaut
-angle_de_vue = 0  # 0 = droite, 90 = bas, 180 = gauche, 270 = haut
+angle_de_vue = 270  # 0 = droite, 90 = bas, 180 = gauche, 270 = haut
 derniere_direction = (0, 0)  # Direction initiale (aucune touche appuyée)
+
+# Définir le rayon de la zone de vision circulaire (vous pouvez ajuster cette valeur)
+rayon_vision_circulaire = 40  # Exemple : rayon de 100 pixels
 
 # Boucle principale
 afficher_menu()
@@ -339,19 +330,19 @@ while running:
     nouvelle_pos = joueur_pos[:]
 
     # Gestion du mouvement du joueur
-    if touches[pygame.K_UP]:
+    if touches[pygame.K_UP] or touches[pygame.K_z]:
         nouvelle_pos[1] -= 1
         derniere_direction = (0, -1)  # Haut
         angle_de_vue = 270  # Angle de vue vers le haut
-    elif touches[pygame.K_DOWN]:
+    elif touches[pygame.K_DOWN] or touches[pygame.K_s]:
         nouvelle_pos[1] += 1
         derniere_direction = (0, 1)  # Bas
         angle_de_vue = 90  # Angle de vue vers le bas
-    elif touches[pygame.K_LEFT]:
+    elif touches[pygame.K_LEFT] or touches[pygame.K_q]:
         nouvelle_pos[0] -= 1
         derniere_direction = (-1, 0)  # Gauche
         angle_de_vue = 180  # Angle de vue vers la gauche
-    elif touches[pygame.K_RIGHT]:
+    elif touches[pygame.K_RIGHT] or touches[pygame.K_d]:
         nouvelle_pos[0] += 1
         derniere_direction = (1, 0)  # Droite
         angle_de_vue = 0  # Angle de vue vers la droite
@@ -374,6 +365,16 @@ while running:
     )
     appliquer_masque_vision(fenetre, joueur_centre, angle_de_vue, cone_length)
 
+    # Convertir la position du joueur en pixels
+    joueur_pos_pixels = (
+        joueur_pos[0] * TAILLE_CASE - camera_offset[0] + TAILLE_CASE // 2,
+        joueur_pos[1] * TAILLE_CASE - camera_offset[1] + TAILLE_CASE // 2
+    )
+    dessiner_zone_vision_circulaire(fenetre, joueur_pos_pixels, rayon_vision_circulaire)
+
+    # Dessiner la zone circulaire de vision autour du joueur
+    dessiner_zone_vision_circulaire(fenetre, joueur_pos_pixels, rayon_vision_circulaire)
+
     # Collecte des clés
     if hopital[joueur_pos[1]][joueur_pos[0]] == "C":
         cles_collectees += 1
@@ -386,5 +387,4 @@ while running:
 
     pygame.display.flip()
     horloge.tick(60)
-
 pygame.quit()

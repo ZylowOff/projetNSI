@@ -34,7 +34,7 @@ cles_collectees = 0  # Compteur de clés collectées
 
 # Paramètres de la vision
 cone_angle = 60  # Angle du cône de vision en degrés
-cone_length = 350  # Longueur du cône de vision
+cone_length = 400  # Longueur du cône de vision
 
 def draw_vision_cone(surface, position, angle, length):
     x, y = position
@@ -177,32 +177,79 @@ def placer_cles(hopital, nombre_cles):
         cases_vides.remove((x, y))
     return cles
 
-# Fonction pour afficher l'hôpital
+def est_dans_cone(joueur_pos, case_pos, angle, length):
+    """Vérifie si une case est dans le cône de vision avec optimisation."""
+    joueur_x, joueur_y = joueur_pos
+    case_x, case_y = case_pos
+
+    # Vecteur du joueur vers la case
+    vecteur_x = case_x - joueur_x
+    vecteur_y = case_y - joueur_y
+    distance = math.sqrt(vecteur_x**2 + vecteur_y**2)
+
+    if distance > length:  # En dehors de la portée
+        return False
+
+    # Calculer l'angle entre la direction du cône et la case
+    angle_case = math.degrees(math.atan2(vecteur_y, vecteur_x))
+    angle_case = (angle_case + 360) % 360  # Normaliser entre 0 et 360
+    angle = angle % 360
+
+    # Vérifier si l'angle est dans la plage du cône
+    debut_cone = (angle - cone_angle / 2) % 360
+    fin_cone = (angle + cone_angle / 2) % 360
+
+    if debut_cone < fin_cone:
+        return debut_cone <= angle_case <= fin_cone
+    else:
+        return angle_case >= debut_cone or angle_case <= fin_cone
+
 def dessiner_hopital(hopital, joueur_pos, camera_offset):
+    """Optimisation du dessin de l'hôpital avec les objets dans le cône de vision."""
     fenetre.fill(NOIR)  # Fond noir
     joueur_x, joueur_y = joueur_pos
+    
+    # Pré-calculer l'offset de la caméra une seule fois pour chaque case
+    camera_x_offset = camera_offset[0]
+    camera_y_offset = camera_offset[1]
+    
+    # Dessiner l'hôpital
     for i, ligne in enumerate(hopital):
         for j, case in enumerate(ligne):
-            x = j * TAILLE_CASE - camera_offset[0]
-            y = i * TAILLE_CASE - camera_offset[1]
-            if case == "#":
-                pygame.draw.rect(fenetre, MUR, (x, y, TAILLE_CASE, TAILLE_CASE))
-            elif case == "S":
-                pygame.draw.rect(fenetre, SORTIE, (x, y, TAILLE_CASE, TAILLE_CASE))
+            # Convertir les coordonnées de la case en pixels
+            x = j * TAILLE_CASE - camera_x_offset
+            y = i * TAILLE_CASE - camera_y_offset
+
+            # Ne vérifier la visibilité que pour les cases contenant des objets spéciaux
+            if case == "#":  # Mur
+                couleur = MUR
             elif case == " ":
-                pygame.draw.rect(fenetre, SOL, (x, y, TAILLE_CASE, TAILLE_CASE))
-            elif case == "C":
-                pygame.draw.rect(fenetre, CLE, (x, y, TAILLE_CASE, TAILLE_CASE))
-    # Dessine le joueur
-    joueur_ecran_x = joueur_x * TAILLE_CASE - camera_offset[0]
-    joueur_ecran_y = joueur_y * TAILLE_CASE - camera_offset[1]
+                couleur = SOL
+            else:
+                # Vérification de la visibilité uniquement pour les objets spéciaux
+                if case == "S":  # Sortie
+                    dans_cone = est_dans_cone((joueur_x, joueur_y), (j, i), angle_de_vue, cone_length)
+                    couleur = SORTIE if dans_cone else SOL
+                elif case == "C":  # Clé
+                    dans_cone = est_dans_cone((joueur_x, joueur_y), (j, i), angle_de_vue, cone_length)
+                    couleur = CLE if dans_cone else SOL
+                else:
+                    couleur = NOIR
+
+            # Dessiner la case
+            pygame.draw.rect(fenetre, couleur, (x, y, TAILLE_CASE, TAILLE_CASE))
+
+    # Dessiner le joueur
+    joueur_ecran_x = joueur_x * TAILLE_CASE - camera_x_offset
+    joueur_ecran_y = joueur_y * TAILLE_CASE - camera_y_offset
     pygame.draw.rect(fenetre, JOUEUR, (joueur_ecran_x, joueur_ecran_y, TAILLE_CASE, TAILLE_CASE))
 
-    # Affiche le compteur de clés
+    # Affichage du compteur de clés
     texte = pygame.font.Font(None, 40).render(f"Clés: {cles_collectees}/{NOMBRE_CLES}", True, BLANC)
     fenetre.blit(texte, (10, 10))
 
 
+    
 # Vérification de la validité du déplacement
 def deplacement_valide(hopital, pos):
     x, y = pos
@@ -380,11 +427,13 @@ while running:
         cles_collectees += 1
         hopital[joueur_pos[1]][joueur_pos[0]] = " "
 
-    # Victoire si le joueur atteint la sortie avec toutes les clés
+    
+# Victoire si le joueur atteint la sortie avec toutes les clés
     if hopital[joueur_pos[1]][joueur_pos[0]] == "S" and cles_collectees == NOMBRE_CLES:
         afficher_victoire()
         running = False
 
     pygame.display.flip()
     horloge.tick(60)
+
 pygame.quit()

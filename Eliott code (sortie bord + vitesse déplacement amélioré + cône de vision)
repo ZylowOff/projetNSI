@@ -123,7 +123,7 @@ def dessiner_zone_vision_circulaire(surface, position, rayon):
 
 def generer_hopital(nb_lignes, nb_colonnes):
     nb_lignes = (nb_lignes // 3) * 3 + 1  # Ajuste les dimensions pour garantir un labyrinthe valide
-    nb_colonnes = (nb_colonnes // 3) * 3 + 1
+    nb_colonnes = (nb_colonnes // 3)* 3 + 1
     hopital = [["#" for _ in range(nb_colonnes)] for _ in range(nb_lignes)]
 
     def voisins(x, y):

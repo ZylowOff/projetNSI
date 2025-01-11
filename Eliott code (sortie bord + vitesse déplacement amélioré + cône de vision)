@@ -33,7 +33,7 @@ NOMBRE_CLES = 3  # Nombre de clés à collecter pour gagner
 cles_collectees = 0  # Compteur de clés collectées
 
 # Paramètres de la vision
-cone_angle =   # Angle du cône de vision en degrés
+cone_angle = 70  # Angle du cône de vision en degrés
 cone_length = 400  # Longueur du cône de vision
 
 def draw_vision_cone(surface, position, angle, length):

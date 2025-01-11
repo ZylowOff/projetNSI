@@ -31,6 +31,25 @@ horloge = pygame.time.Clock()
 NOMBRE_CLES = 3  # Nombre de clés à collecter pour gagner
 cles_collectees = 0  # Compteur de clés collectées
 
+# Paramètres de la vision
+cone_angle = 60  # Angle du cône de vision en degrés
+cone_length = 200  # Longueur du cône de vision
+
+# Fonction pour dessiner le cône de vision
+def draw_vision_cone(surface, position, angle, length):
+    x, y = position
+    start_angle = math.radians(angle - cone_angle / 2)
+    end_angle = math.radians(angle + cone_angle / 2)
+    points = [position]
+
+    for theta in range(int(start_angle * 180 / math.pi), int(end_angle * 180 / math.pi) + 1, 1):
+        theta_rad = math.radians(theta)
+        point_x = x + length * math.cos(theta_rad)
+        point_y = y + length * math.sin(theta_rad)
+        points.append((point_x, point_y))
+
+    pygame.draw.polygon(surface, WHITE, points, 0)
+
 def generer_hopital(nb_lignes, nb_colonnes):
     nb_lignes = (nb_lignes // 3) * 3 + 1  # Ajuste les dimensions pour garantir un labyrinthe valide
     nb_colonnes = (nb_colonnes // 3) * 3 + 1

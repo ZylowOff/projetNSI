@@ -246,8 +246,8 @@ joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
 camera_offset = [0, 0]
 
 # Vitesse de déplacement
-vitesse = 3
-compteur_deplacement = 0
+vitesse = 1
+compteur_deplacement = 10
 
 # Boucle principale
 afficher_menu()

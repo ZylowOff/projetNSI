@@ -61,14 +61,6 @@ def draw_vision_cone(surface, position, angle, length):
     end_angle = math.radians(angle + cone_angle / 2)    # Fin du cône
     points = [position]  # Sommet du cône (position du joueur)
 
-    # Ajout des points du périmètre du cône
-    steps = 50  # Plus de steps = cône plus lisse
-    for i in range(steps + 1):
-        theta = start_angle + i * (end_angle - start_angle) / steps
-        point_x = x + length * math.cos(theta)
-        point_y = y + length * math.sin(theta)
-        points.append((point_x, point_y))
-
     # Découpe un trou dans le masque pour le cône de vision
     pygame.draw.polygon(masque, (0, 0, 0, 0), points)  # Surface transparente pour le cône
     surface.blit(masque, (0, 0))  # Applique le masque sur l'écran
@@ -82,20 +74,11 @@ def appliquer_masque_vision(surface, position, angle, length):
     end_angle = math.radians(angle + cone_angle / 2)    # Fin du cône
     points = [position]  # Le sommet du cône (position du joueur)
 
-    # Ajout des points du périmètre du cône
-    steps = 50  # Plus de steps = cône plus lisse
-    for i in range(steps + 1):
-        theta = start_angle + i * (end_angle - start_angle) / steps
-        point_x = x + length * math.cos(theta)
-        point_y = y + length * math.sin(theta)
-        points.append((point_x, point_y))
-
     # Découpe un trou transparent dans le masque pour le cône de vision
     pygame.draw.polygon(masque, (0, 0, 0, 0), points)  # Zone transparente pour le cône
 
     # Applique le masque sur l'écran
     surface.blit(masque, (0, 0))
-
 
 def generer_hopital(nb_lignes, nb_colonnes):
     nb_lignes = (nb_lignes // 3) * 3 + 1  # Ajuste les dimensions pour garantir un labyrinthe valide

@@ -34,7 +34,7 @@ cles_collectees = 0  # Compteur de clés collectées
 
 # Paramètres de la vision
 cone_angle = 60  # Angle du cône de vision en degrés
-cone_length = 400  # Longueur du cône de vision
+cone_length = 375  # Longueur du cône de vision
 
 def draw_vision_cone(surface, position, angle, length):
     x, y = position

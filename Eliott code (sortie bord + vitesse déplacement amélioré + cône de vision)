@@ -36,7 +36,7 @@ cles_collectees = 0  # Compteur de clés collectées
 cone_angle = 60  # Angle du cône de vision en degrés
 cone_length = 375  # Longueur du cône de vision
 
-def draw_vision_cone(surface, position, angle, length):
+def dessiner_vision_cone(surface, position, angle, length):
     x, y = position
     start_angle = math.radians(angle - cone_angle / 2)  # Début du cône
     end_angle = math.radians(angle + cone_angle / 2)    # Fin du cône
@@ -271,17 +271,21 @@ def afficher_menu():
         fenetre.fill(NOIR)
 
         # Titre
-        titre = pygame.font.Font(None, 80).render("Jeu Hôpital", True, BLANC)
-        fenetre.blit(titre, (LARGEUR // 2 - titre.get_width() // 2, 100))
+        titre = pygame.font.Font(None, 150).render("Creepy Hospital", True, BLANC)
+        fenetre.blit(titre, (LARGEUR // 2 - titre.get_width() // 2, HAUTEUR - 700))
 
         # Boutons
-        bouton_jouer = pygame.Rect(LARGEUR // 2 - 150, 250, 300, 80)  # Bouton agrandi
-        bouton_quitter = pygame.Rect(LARGEUR // 2 - 150, 400, 300, 80)  # Bouton agrandi
-        pygame.draw.rect(fenetre, GRIS, bouton_jouer)
-        pygame.draw.rect(fenetre, GRIS, bouton_quitter)
+        bouton_paramètres = pygame.Rect(LARGEUR // 2 - 150, 350, 300, 70)
+        bouton_jouer = pygame.Rect(LARGEUR // 2 - 230, 450, 460, 100)  # Bouton agrandi
+        bouton_quitter = pygame.Rect(LARGEUR // 2 - 150, 580, 300, 70)  # Bouton agrandi
+        pygame.draw.rect(fenetre, MUR, bouton_paramètres)
+        pygame.draw.rect(fenetre, MUR, bouton_jouer)
+        pygame.draw.rect(fenetre, MUR, bouton_quitter)
 
-        texte_jouer = pygame.font.Font(None, 50).render("Jouer", True, BLANC)
+        texte_paramètres = pygame.font.Font(None, 50).render("Paramètres", True, BLANC)
+        texte_jouer = pygame.font.Font(None, 100).render("Jouer", True, BLANC)
         texte_quitter = pygame.font.Font(None, 50).render("Quitter", True, BLANC)
+        fenetre.blit(texte_paramètres,(bouton_paramètres.centerx - texte_paramètres.get_width() // 2, bouton_paramètres.centery - texte_paramètres.get_height() // 2))
         fenetre.blit(texte_jouer, (bouton_jouer.centerx - texte_jouer.get_width() // 2, bouton_jouer.centery - texte_jouer.get_height() // 2))
         fenetre.blit(texte_quitter, (bouton_quitter.centerx - texte_quitter.get_width() // 2, bouton_quitter.centery - texte_quitter.get_height() // 2))
 
@@ -304,20 +308,24 @@ def afficher_menu_pause():
         fenetre.fill(NOIR)
 
         # Boutons
-        bouton_continuer = pygame.Rect(LARGEUR // 2 - 150, 200, 300, 80)  
-        bouton_recommencer = pygame.Rect(LARGEUR // 2 - 150, 350, 300, 80) 
-        bouton_quitter = pygame.Rect(LARGEUR // 2 - 150, 500, 300, 80)  
+        bouton_continuer = pygame.Rect(LARGEUR // 2 - 230, 240, 460, 100)  
+        bouton_recommencer = pygame.Rect(LARGEUR // 2 - 200, 380, 400, 70) 
+        bouton_paramètres = pygame.Rect(LARGEUR // 2 - 150, 480, 290, 70)
+        bouton_quitter = pygame.Rect(LARGEUR // 2 - 120, 580, 230, 70)  
 
-        pygame.draw.rect(fenetre, GRIS, bouton_continuer)
-        pygame.draw.rect(fenetre, GRIS, bouton_recommencer)
-        pygame.draw.rect(fenetre, GRIS, bouton_quitter)
+        pygame.draw.rect(fenetre, MUR, bouton_continuer)
+        pygame.draw.rect(fenetre, MUR, bouton_recommencer)
+        pygame.draw.rect(fenetre, MUR, bouton_paramètres)
+        pygame.draw.rect(fenetre, MUR, bouton_quitter)
 
-        texte_continuer = pygame.font.Font(None, 50).render("Continuer", True, BLANC)
-        texte_recommencer = pygame.font.Font(None, 50).render("Recommencer", True, BLANC)
+        texte_continuer = pygame.font.Font(None, 80).render("Continuer", True, BLANC)
+        texte_recommencer = pygame.font.Font(None, 60).render("Recommencer", True, BLANC)
+        texte_paramètres = pygame.font.Font(None, 60).render("Paramètres", True, BLANC)
         texte_quitter = pygame.font.Font(None, 50).render("Quitter", True, BLANC)
 
         fenetre.blit(texte_continuer, (bouton_continuer.centerx - texte_continuer.get_width() // 2, bouton_continuer.centery - texte_continuer.get_height() // 2))
         fenetre.blit(texte_recommencer, (bouton_recommencer.centerx - texte_recommencer.get_width() // 2, bouton_recommencer.centery - texte_recommencer.get_height() // 2))
+        fenetre.blit(texte_paramètres,(bouton_paramètres.centerx - texte_paramètres.get_width() // 2, bouton_paramètres.centery - texte_paramètres.get_height() // 2))
         fenetre.blit(texte_quitter, (bouton_quitter.centerx - texte_quitter.get_width() // 2, bouton_quitter.centery - texte_quitter.get_height() // 2))
 
         pygame.display.flip()

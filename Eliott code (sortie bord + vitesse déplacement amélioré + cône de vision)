@@ -97,7 +97,6 @@ def appliquer_masque_vision(surface, position, angle, length):
     # Applique le masque sur l'écran
     surface.blit(masque, (0, 0))
 
-
 def dessiner_zone_vision_circulaire(surface, position, rayon):
     x, y = position
     for i in range(-rayon, rayon+1):  # Parcourt chaque case autour du joueur

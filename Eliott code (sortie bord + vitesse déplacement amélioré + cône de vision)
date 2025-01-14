@@ -266,8 +266,14 @@ def afficher_victoire():
     pygame.display.flip()
     pygame.time.delay(3000)
 
+# Ajoutez une variable pour contrôler la musique du menu
+menu_music = True
+
 # Afficher le menu principal
 def afficher_menu():
+    global menu_music
+    if menu_music:
+       pygame.mixer.music.play(-1)  # Redémarrer la musique si elle n'est pas déjà en cours
     while True:
         fenetre.fill(NOIR)
 
@@ -298,6 +304,8 @@ def afficher_menu():
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if bouton_jouer.collidepoint(event.pos):
+                    menu_music = False  # Le menu est terminé
+                    pygame.mixer.music.stop()  # Arrêter la musique
                     return
                 if bouton_quitter.collidepoint(event.pos):
                     pygame.quit()
@@ -368,6 +376,9 @@ rayon_vision_circulaire = 40  # Exemple : rayon de 100 pixels
 afficher_menu()
 running = True
 while running:
+    if not menu_music:
+        # Si la musique est arrêtée, on peut ajouter une musique de jeu différente ici si nécessaire
+        pass
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -440,7 +451,10 @@ while running:
         afficher_victoire()
         running = False
 
-    pygame.display.flip()
-    horloge.tick(60)
+ # Arrêter la musique lorsque le menu est quitté
+pygame.mixer.music.stop()   
+
+pygame.display.flip()
+horloge.tick(60)
 
 pygame.quit()

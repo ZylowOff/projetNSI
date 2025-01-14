@@ -28,20 +28,15 @@ pygame.display.set_caption("Jeu Hôpital")
 # Horloge pour contrôler les FPS
 horloge = pygame.time.Clock()
 
-# Initialisation de la musique
-pygame.mixer.init()
-pygame.mixer.music.load(r"C:\Users\luiar\OneDrive\Рабочий стол\heisenberg\python\S.T.A.L.K.E.R._ Shadow Of Chernobyl [Music] - Menu Theme (online-audio-converter.com).mp3")
-pygame.mixer.music.play(-1)  # -1 pour jouer la musique en boucle
-
 # Paramètres de jeu
 NOMBRE_CLES = 3  # Nombre de clés à collecter pour gagner
 cles_collectees = 0  # Compteur de clés collectées
 
 # Paramètres de la vision
 cone_angle = 60  # Angle du cône de vision en degrés
-cone_length = 400  # Longueur du cône de vision
+cone_length = 375  # Longueur du cône de vision
 
-def draw_vision_cone(surface, position, angle, length):
+def dessiner_vision_cone(surface, position, angle, length):
     x, y = position
     start_angle = math.radians(angle - cone_angle / 2)  # Début du cône
     end_angle = math.radians(angle + cone_angle / 2)    # Fin du cône
@@ -102,7 +97,6 @@ def appliquer_masque_vision(surface, position, angle, length):
     # Applique le masque sur l'écran
     surface.blit(masque, (0, 0))
 
-
 def dessiner_zone_vision_circulaire(surface, position, rayon):
     x, y = position
     for i in range(-rayon, rayon+1):  # Parcourt chaque case autour du joueur
@@ -125,10 +119,9 @@ def dessiner_zone_vision_circulaire(surface, position, rayon):
                     elif case == " ":  # Sol
                         pygame.draw.rect(surface, SOL, (case_x, case_y, TAILLE_CASE, TAILLE_CASE))
 
-
 def generer_hopital(nb_lignes, nb_colonnes):
     nb_lignes = (nb_lignes // 3) * 3 + 1  # Ajuste les dimensions pour garantir un labyrinthe valide
-    nb_colonnes = (nb_colonnes // 3) * 3 + 1
+    nb_colonnes = (nb_colonnes // 3)* 3 + 1
     hopital = [["#" for _ in range(nb_colonnes)] for _ in range(nb_lignes)]
 
     def voisins(x, y):
@@ -169,7 +162,6 @@ def generer_hopital(nb_lignes, nb_colonnes):
             break
 
     return hopital
-
 
 # Fonction pour placer les clés dans le labyrinthe
 def placer_cles(hopital, nombre_cles):
@@ -253,8 +245,6 @@ def dessiner_hopital(hopital, joueur_pos, camera_offset):
     texte = pygame.font.Font(None, 40).render(f"Clés: {cles_collectees}/{NOMBRE_CLES}", True, BLANC)
     fenetre.blit(texte, (10, 10))
 
-
-    
 # Vérification de la validité du déplacement
 def deplacement_valide(hopital, pos):
     x, y = pos
@@ -272,28 +262,26 @@ def afficher_victoire():
     pygame.time.delay(3000)
 
 # Afficher le menu principal
-# Ajoutez une variable pour contrôler la musique du menu
-menu_music = True
-
 def afficher_menu():
-    global menu_music
-    if menu_music:
-        pygame.mixer.music.play(-1)  # Redémarrer la musique si elle n'est pas déjà en cours
     while True:
         fenetre.fill(NOIR)
 
         # Titre
-        titre = pygame.font.Font(None, 80).render("Jeu Hôpital", True, BLANC)
-        fenetre.blit(titre, (LARGEUR // 2 - titre.get_width() // 2, 100))
+        titre = pygame.font.Font(None, 150).render("Creepy Hospital", True, BLANC)
+        fenetre.blit(titre, (LARGEUR // 2 - titre.get_width() // 2, HAUTEUR - 700))
 
         # Boutons
-        bouton_jouer = pygame.Rect(LARGEUR // 2 - 150, 250, 300, 80)
-        bouton_quitter = pygame.Rect(LARGEUR // 2 - 150, 400, 300, 80)
-        pygame.draw.rect(fenetre, GRIS, bouton_jouer)
-        pygame.draw.rect(fenetre, GRIS, bouton_quitter)
+        bouton_paramètres = pygame.Rect(LARGEUR // 2 - 150, 350, 300, 70)
+        bouton_jouer = pygame.Rect(LARGEUR // 2 - 230, 450, 460, 100)  # Bouton agrandi
+        bouton_quitter = pygame.Rect(LARGEUR // 2 - 150, 580, 300, 70)  # Bouton agrandi
+        pygame.draw.rect(fenetre, MUR, bouton_paramètres)
+        pygame.draw.rect(fenetre, MUR, bouton_jouer)
+        pygame.draw.rect(fenetre, MUR, bouton_quitter)
 
-        texte_jouer = pygame.font.Font(None, 50).render("Jouer", True, BLANC)
+        texte_paramètres = pygame.font.Font(None, 50).render("Paramètres", True, BLANC)
+        texte_jouer = pygame.font.Font(None, 100).render("Jouer", True, BLANC)
         texte_quitter = pygame.font.Font(None, 50).render("Quitter", True, BLANC)
+        fenetre.blit(texte_paramètres,(bouton_paramètres.centerx - texte_paramètres.get_width() // 2, bouton_paramètres.centery - texte_paramètres.get_height() // 2))
         fenetre.blit(texte_jouer, (bouton_jouer.centerx - texte_jouer.get_width() // 2, bouton_jouer.centery - texte_jouer.get_height() // 2))
         fenetre.blit(texte_quitter, (bouton_quitter.centerx - texte_quitter.get_width() // 2, bouton_quitter.centery - texte_quitter.get_height() // 2))
 
@@ -305,8 +293,6 @@ def afficher_menu():
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if bouton_jouer.collidepoint(event.pos):
-                    menu_music = False  # Le menu est terminé
-                    pygame.mixer.music.stop()  # Arrêter la musique
                     return
                 if bouton_quitter.collidepoint(event.pos):
                     pygame.quit()
@@ -318,20 +304,24 @@ def afficher_menu_pause():
         fenetre.fill(NOIR)
 
         # Boutons
-        bouton_continuer = pygame.Rect(LARGEUR // 2 - 150, 200, 300, 80)  
-        bouton_recommencer = pygame.Rect(LARGEUR // 2 - 150, 350, 300, 80) 
-        bouton_quitter = pygame.Rect(LARGEUR // 2 - 150, 500, 300, 80)  
+        bouton_continuer = pygame.Rect(LARGEUR // 2 - 230, 240, 460, 100)  
+        bouton_recommencer = pygame.Rect(LARGEUR // 2 - 200, 380, 400, 70) 
+        bouton_paramètres = pygame.Rect(LARGEUR // 2 - 150, 480, 290, 70)
+        bouton_quitter = pygame.Rect(LARGEUR // 2 - 120, 580, 230, 70)  
 
-        pygame.draw.rect(fenetre, GRIS, bouton_continuer)
-        pygame.draw.rect(fenetre, GRIS, bouton_recommencer)
-        pygame.draw.rect(fenetre, GRIS, bouton_quitter)
+        pygame.draw.rect(fenetre, MUR, bouton_continuer)
+        pygame.draw.rect(fenetre, MUR, bouton_recommencer)
+        pygame.draw.rect(fenetre, MUR, bouton_paramètres)
+        pygame.draw.rect(fenetre, MUR, bouton_quitter)
 
-        texte_continuer = pygame.font.Font(None, 50).render("Continuer", True, BLANC)
-        texte_recommencer = pygame.font.Font(None, 50).render("Recommencer", True, BLANC)
+        texte_continuer = pygame.font.Font(None, 80).render("Continuer", True, BLANC)
+        texte_recommencer = pygame.font.Font(None, 60).render("Recommencer", True, BLANC)
+        texte_paramètres = pygame.font.Font(None, 60).render("Paramètres", True, BLANC)
         texte_quitter = pygame.font.Font(None, 50).render("Quitter", True, BLANC)
 
         fenetre.blit(texte_continuer, (bouton_continuer.centerx - texte_continuer.get_width() // 2, bouton_continuer.centery - texte_continuer.get_height() // 2))
         fenetre.blit(texte_recommencer, (bouton_recommencer.centerx - texte_recommencer.get_width() // 2, bouton_recommencer.centery - texte_recommencer.get_height() // 2))
+        fenetre.blit(texte_paramètres,(bouton_paramètres.centerx - texte_paramètres.get_width() // 2, bouton_paramètres.centery - texte_paramètres.get_height() // 2))
         fenetre.blit(texte_quitter, (bouton_quitter.centerx - texte_quitter.get_width() // 2, bouton_quitter.centery - texte_quitter.get_height() // 2))
 
         pygame.display.flip()
@@ -348,7 +338,6 @@ def afficher_menu_pause():
                 if bouton_quitter.collidepoint(event.pos):
                     pygame.quit()
                     sys.exit()
-
 
 
 # Génération initiale
@@ -374,10 +363,6 @@ rayon_vision_circulaire = 40  # Exemple : rayon de 100 pixels
 afficher_menu()
 running = True
 while running:
-    if not menu_music:
-        # Si la musique est arrêtée, on peut ajouter une musique de jeu différente ici si nécessaire
-        pass
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -452,8 +437,5 @@ while running:
 
     pygame.display.flip()
     horloge.tick(60)
-
-# Arrêter la musique lorsque le menu est quitté
-pygame.mixer.music.stop()
 
 pygame.quit()

@@ -446,6 +446,6 @@ while running:
         running = False
 
     pygame.display.flip()
-    horloge.tick(60)
+    horloge.tick(120)
 
 pygame.quit()

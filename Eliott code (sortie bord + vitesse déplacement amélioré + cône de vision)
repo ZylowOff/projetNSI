@@ -28,6 +28,11 @@ pygame.display.set_caption("Jeu Hôpital")
 # Horloge pour contrôler les FPS
 horloge = pygame.time.Clock()
 
+# Initialisation de la musique
+pygame.mixer.init()
+pygame.mixer.music.load(r"C:\Users\luiar\OneDrive\Рабочий стол\heisenberg\python\S.T.A.L.K.E.R._ Shadow Of Chernobyl [Music] - Menu Theme (online-audio-converter.com).mp3")
+pygame.mixer.music.play(-1)  # -1 pour jouer la musique en boucle
+
 # Paramètres de jeu
 NOMBRE_CLES = 3  # Nombre de clés à collecter pour gagner
 cles_collectees = 0  # Compteur de clés collectées
@@ -119,7 +124,6 @@ def dessiner_zone_vision_circulaire(surface, position, rayon):
                     elif case == " ":  # Sol
                         pygame.draw.rect(surface, SOL, (case_x, case_y, TAILLE_CASE, TAILLE_CASE))
 
-
 def generer_hopital(nb_lignes, nb_colonnes):
     nb_lignes = (nb_lignes // 3) * 3 + 1  # Ajuste les dimensions pour garantir un labyrinthe valide
     nb_colonnes = (nb_colonnes // 3)* 3 + 1
@@ -163,7 +167,6 @@ def generer_hopital(nb_lignes, nb_colonnes):
             break
 
     return hopital
-
 
 # Fonction pour placer les clés dans le labyrinthe
 def placer_cles(hopital, nombre_cles):
@@ -247,8 +250,6 @@ def dessiner_hopital(hopital, joueur_pos, camera_offset):
     texte = pygame.font.Font(None, 40).render(f"Clés: {cles_collectees}/{NOMBRE_CLES}", True, BLANC)
     fenetre.blit(texte, (10, 10))
 
-
-    
 # Vérification de la validité du déplacement
 def deplacement_valide(hopital, pos):
     x, y = pos
@@ -342,7 +343,6 @@ def afficher_menu_pause():
                 if bouton_quitter.collidepoint(event.pos):
                     pygame.quit()
                     sys.exit()
-
 
 
 # Génération initiale

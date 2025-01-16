@@ -21,7 +21,7 @@ SORTIE = (0, 255, 0)
 MUR = (109, 45, 70)
 SOL = (115, 109, 115)
 CLE = (255, 223, 0)
-ENEMIES = (255, 0, 0)
+ENNEMIES = (255, 0, 0)
 
 
 # Création de la fenêtre principale
@@ -34,7 +34,7 @@ horloge = pygame.time.Clock()
 # Paramètres de jeu
 NOMBRE_CLES = 3  # Nombre de clés à collecter pour gagner
 cles_collectees = 0  # Compteur de clés collectées
-NOMBRE_ENEMIES = 100
+NOMBRE_ENNEMIES = 5
 
 # Paramètres de la vision
 cone_angle = 60  # Angle du cône de vision en degrés
@@ -145,15 +145,15 @@ def placer_cles(hopital, nombre_cles):
         cases_vides.remove((x, y))
     return cles
 
-def placer_enemies(hopital, NOMBRE_ENEMIES):
-    enemies = []
+def placer_ennemies(hopital, NOMBRE_ENNEMIES):
+    ennemies = []
     case_vide = [(i, j) for i, ligne in enumerate(hopital) for j, case in enumerate(ligne) if case == " "]
-    for j in range(NOMBRE_ENEMIES):
+    for j in range(NOMBRE_ENNEMIES):
         x, y = random.choice(case_vide)
-        enemies.append((x, y))
-        hopital[x][y] = "Y"  # Ajoute un enemie à cet emplacement
+        ennemies.append((x, y))
+        hopital[x][y] = "Y"  # Ajoute un ennemie à cet emplacement
         case_vide.remove((x, y))
-    return enemies
+    return ennemies
 
 def est_dans_cone(joueur_pos, case_pos, angle, length):
     """Vérifie si une case est dans le cône de vision avec optimisation."""
@@ -213,7 +213,7 @@ def dessiner_hopital(hopital, joueur_pos, camera_offset):
                     couleur = CLE if dans_cone else SOL
                 elif case == "Y": # Ennemie
                     dans_cone = est_dans_cone((joueur_x, joueur_y), (j, i), angle_de_vue, cone_length)
-                    couleur = ENEMIES if dans_cone else SOL
+                    couleur = ENNEMIES if dans_cone else SOL
                 else:
                     couleur = NOIR
 
@@ -332,7 +332,7 @@ def afficher_menu_pause():
 # Génération objet
 hopital = generer_hopital(NB_LIGNES, NB_COLONNES)
 cles = placer_cles(hopital, NOMBRE_CLES)
-enemies = placer_enemies(hopital, NOMBRE_ENEMIES)
+ennemies = placer_ennemies(hopital, NOMBRE_ENNEMIES)
 
 # Boucle principale
 afficher_menu()
@@ -349,7 +349,7 @@ while running:
                     cles = placer_cles(hopital, NOMBRE_CLES)
                     joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
                     cles_collectees = 0
-                    positions_enemies = []  # Réinitialiser la liste des ennemis
+                    positions_ennemies = []  # Réinitialiser la liste des ennemis
 
     touches = pygame.key.get_pressed()
     nouvelle_pos = joueur_pos[:]

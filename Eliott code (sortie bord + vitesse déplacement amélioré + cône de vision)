@@ -22,7 +22,7 @@ MUR = (109, 45, 70)
 SOL = (115, 109, 115)
 CLE = (255, 223, 0)
 ENNEMIES = (255, 0, 0)
-
+BORDEAUX = (40, 0, 0)
 
 # Création de la fenêtre principale
 fenetre = pygame.display.set_mode((LARGEUR, HAUTEUR))
@@ -242,6 +242,7 @@ def afficher_victoire():
     pygame.time.delay(3000)
 
 # Afficher le menu principal
+# Afficher le menu principal
 def afficher_menu():
     while True:
         fenetre.fill(NOIR)
@@ -250,26 +251,37 @@ def afficher_menu():
         titre = pygame.font.Font(None, 150).render("Creepy Hospital", True, BLANC)
         fenetre.blit(titre, (LARGEUR // 2 - titre.get_width() // 2, HAUTEUR - 700))
 
+        # Récupérer la position de la souris
+        souris_x, souris_y = pygame.mouse.get_pos()
+
         # Boutons
         bouton_paramètres = pygame.Rect(LARGEUR // 2 - 170, 350, 340, 70)
         bouton_jouer = pygame.Rect(LARGEUR // 2 - 230, 440, 460, 100)
         bouton_crédits = pygame.Rect(LARGEUR // 2 - 150, 560, 300, 70)
         bouton_quitter = pygame.Rect(LARGEUR // 2 - 120, 650, 240, 70)
-        
-        pygame.draw.rect(fenetre, MUR, bouton_paramètres)
-        pygame.draw.rect(fenetre, MUR, bouton_jouer)
-        pygame.draw.rect(fenetre, MUR, bouton_crédits)
-        pygame.draw.rect(fenetre, MUR, bouton_quitter)
 
-        texte_paramètres = pygame.font.Font(None, 50).render("Paramètres", True, BLANC)
-        texte_jouer = pygame.font.Font(None, 100).render("Jouer", True, BLANC)
-        texte_crédits = pygame.font.Font(None, 50).render("Crédits", True, BLANC)
-        texte_quitter = pygame.font.Font(None, 50).render("Quitter", True, BLANC)
-        
-        fenetre.blit(texte_paramètres,(bouton_paramètres.centerx - texte_paramètres.get_width() // 2, bouton_paramètres.centery - texte_paramètres.get_height() // 2))
-        fenetre.blit(texte_jouer, (bouton_jouer.centerx - texte_jouer.get_width() // 2, bouton_jouer.centery - texte_jouer.get_height() // 2))
-        fenetre.blit(texte_crédits, (bouton_crédits.centerx - texte_crédits.get_width() //2, bouton_crédits.centery - texte_crédits.get_height() //2))
-        fenetre.blit(texte_quitter, (bouton_quitter.centerx - texte_quitter.get_width() // 2, bouton_quitter.centery - texte_quitter.get_height() // 2))
+        # Liste des boutons et leurs textes
+        boutons = [
+            (bouton_paramètres, "Paramètres", 50),
+            (bouton_jouer, "Jouer", 100),
+            (bouton_crédits, "Crédits", 50),
+            (bouton_quitter, "Quitter", 50),
+        ]
+
+        for bouton, texte, taille_texte in boutons:
+            # Vérifier si la souris est sur le bouton
+            if bouton.collidepoint(souris_x, souris_y):
+                couleur = (255, 0, 0)  # Rouge
+                bouton = bouton.inflate(20, 20)  # Agrandir légèrement le bouton
+            else:
+                couleur = BORDEAUX
+
+            pygame.draw.rect(fenetre, couleur, bouton)
+            texte_rendu = pygame.font.Font(None, taille_texte).render(texte, True, BLANC)
+            fenetre.blit(
+                texte_rendu,
+                (bouton.centerx - texte_rendu.get_width() // 2, bouton.centery - texte_rendu.get_height() // 2),
+            )
 
         pygame.display.flip()
 
@@ -284,35 +296,46 @@ def afficher_menu():
                     pygame.quit()
                     sys.exit()
 
+
+# Afficher le menu pause
 # Afficher le menu pause
 def afficher_menu_pause():
     while True:
         fenetre.fill(NOIR)
 
+        # Récupérer la position de la souris
+        souris_x, souris_y = pygame.mouse.get_pos()
+
         # Boutons
-        bouton_continuer = pygame.Rect(LARGEUR // 2 - 250, 230, 520, 100)  
-        bouton_recommencer = pygame.Rect(LARGEUR // 2 - 210, 350, 440, 70) 
+        bouton_continuer = pygame.Rect(LARGEUR // 2 - 250, 230, 520, 100)
+        bouton_recommencer = pygame.Rect(LARGEUR // 2 - 210, 350, 440, 70)
         bouton_paramètres = pygame.Rect(LARGEUR // 2 - 170, 440, 360, 60)
         bouton_crédits = pygame.Rect(LARGEUR // 2 - 140, 520, 300, 70)
-        bouton_quitter = pygame.Rect(LARGEUR // 2 - 120, 610, 260, 70)  
+        bouton_quitter = pygame.Rect(LARGEUR // 2 - 120, 610, 260, 70)
 
-        pygame.draw.rect(fenetre, MUR, bouton_continuer)
-        pygame.draw.rect(fenetre, MUR, bouton_recommencer)
-        pygame.draw.rect(fenetre, MUR, bouton_paramètres)
-        pygame.draw.rect(fenetre, MUR, bouton_crédits)
-        pygame.draw.rect(fenetre, MUR, bouton_quitter)
+        # Liste des boutons et leurs textes
+        boutons = [
+            (bouton_continuer, "Continuer", 80),
+            (bouton_recommencer, "Recommencer", 60),
+            (bouton_paramètres, "Paramètres", 60),
+            (bouton_crédits, "Crédits", 50),
+            (bouton_quitter, "Quitter", 50),
+        ]
 
-        texte_continuer = pygame.font.Font(None, 80).render("Continuer", True, BLANC)
-        texte_recommencer = pygame.font.Font(None, 60).render("Recommencer", True, BLANC)
-        texte_paramètres = pygame.font.Font(None, 60).render("Paramètres", True, BLANC)
-        texte_crédits = pygame.font.Font(None, 50).render("Crédits", True, BLANC)
-        texte_quitter = pygame.font.Font(None, 50).render("Quitter", True, BLANC)
+        for bouton, texte, taille_texte in boutons:
+            # Vérifier si la souris est sur le bouton
+            if bouton.collidepoint(souris_x, souris_y):
+                couleur = (255, 0, 0)  # Rouge
+                bouton = bouton.inflate(20, 20)  # Agrandir légèrement le bouton
+            else:
+                couleur = BORDEAUX
 
-        fenetre.blit(texte_continuer, (bouton_continuer.centerx - texte_continuer.get_width() // 2, bouton_continuer.centery - texte_continuer.get_height() // 2))
-        fenetre.blit(texte_recommencer, (bouton_recommencer.centerx - texte_recommencer.get_width() // 2, bouton_recommencer.centery - texte_recommencer.get_height() // 2))
-        fenetre.blit(texte_paramètres,(bouton_paramètres.centerx - texte_paramètres.get_width() // 2, bouton_paramètres.centery - texte_paramètres.get_height() // 2))
-        fenetre.blit(texte_crédits, (bouton_crédits.centerx - texte_crédits.get_width() //2, bouton_crédits.centery - texte_crédits.get_height() //2))
-        fenetre.blit(texte_quitter, (bouton_quitter.centerx - texte_quitter.get_width() // 2, bouton_quitter.centery - texte_quitter.get_height() // 2))
+            pygame.draw.rect(fenetre, couleur, bouton)
+            texte_rendu = pygame.font.Font(None, taille_texte).render(texte, True, BLANC)
+            fenetre.blit(
+                texte_rendu,
+                (bouton.centerx - texte_rendu.get_width() // 2, bouton.centery - texte_rendu.get_height() // 2),
+            )
 
         pygame.display.flip()
 
@@ -328,6 +351,7 @@ def afficher_menu_pause():
                 if bouton_quitter.collidepoint(event.pos):
                     pygame.quit()
                     sys.exit()
+
 
 # Génération objet
 hopital = generer_hopital(NB_LIGNES, NB_COLONNES)

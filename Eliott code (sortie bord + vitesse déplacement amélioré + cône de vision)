@@ -21,8 +21,9 @@ SORTIE = (0, 255, 0)
 MUR = (109, 45, 70)
 SOL = (115, 109, 115)
 CLE = (255, 223, 0)
-ENNEMIES = (255, 0, 0)
-BORDEAUX = (40, 0, 0)
+ENEMIES = (255, 0, 0)
+MENUS = (40, 0, 0)
+
 
 # Création de la fenêtre principale
 fenetre = pygame.display.set_mode((LARGEUR, HAUTEUR))
@@ -34,7 +35,7 @@ horloge = pygame.time.Clock()
 # Paramètres de jeu
 NOMBRE_CLES = 3  # Nombre de clés à collecter pour gagner
 cles_collectees = 0  # Compteur de clés collectées
-NOMBRE_ENNEMIES = 5
+NOMBRE_ENEMIES = 5
 
 # Paramètres de la vision
 cone_angle = 60  # Angle du cône de vision en degrés
@@ -145,15 +146,15 @@ def placer_cles(hopital, nombre_cles):
         cases_vides.remove((x, y))
     return cles
 
-def placer_ennemies(hopital, NOMBRE_ENNEMIES):
-    ennemies = []
+def placer_enemies(hopital, NOMBRE_ENEMIES):
+    enemies = []
     case_vide = [(i, j) for i, ligne in enumerate(hopital) for j, case in enumerate(ligne) if case == " "]
-    for j in range(NOMBRE_ENNEMIES):
+    for j in range(NOMBRE_ENEMIES):
         x, y = random.choice(case_vide)
-        ennemies.append((x, y))
-        hopital[x][y] = "Y"  # Ajoute un ennemie à cet emplacement
+        enemies.append((x, y))
+        hopital[x][y] = "Y"  # Ajoute un enemie à cet emplacement
         case_vide.remove((x, y))
-    return ennemies
+    return enemies
 
 def est_dans_cone(joueur_pos, case_pos, angle, length):
     """Vérifie si une case est dans le cône de vision avec optimisation."""
@@ -213,7 +214,7 @@ def dessiner_hopital(hopital, joueur_pos, camera_offset):
                     couleur = CLE if dans_cone else SOL
                 elif case == "Y": # Ennemie
                     dans_cone = est_dans_cone((joueur_x, joueur_y), (j, i), angle_de_vue, cone_length)
-                    couleur = ENNEMIES if dans_cone else SOL
+                    couleur = ENEMIES if dans_cone else SOL
                 else:
                     couleur = NOIR
 
@@ -242,23 +243,26 @@ def afficher_victoire():
     pygame.time.delay(3000)
 
 # Afficher le menu principal
-# Afficher le menu principal
 def afficher_menu():
     while True:
         fenetre.fill(NOIR)
+
 
         # Titre
         titre = pygame.font.Font(None, 150).render("Creepy Hospital", True, BLANC)
         fenetre.blit(titre, (LARGEUR // 2 - titre.get_width() // 2, HAUTEUR - 700))
 
+
         # Récupérer la position de la souris
         souris_x, souris_y = pygame.mouse.get_pos()
+
 
         # Boutons
         bouton_paramètres = pygame.Rect(LARGEUR // 2 - 170, 350, 340, 70)
         bouton_jouer = pygame.Rect(LARGEUR // 2 - 230, 440, 460, 100)
         bouton_crédits = pygame.Rect(LARGEUR // 2 - 150, 560, 300, 70)
         bouton_quitter = pygame.Rect(LARGEUR // 2 - 120, 650, 240, 70)
+
 
         # Liste des boutons et leurs textes
         boutons = [
@@ -268,13 +272,15 @@ def afficher_menu():
             (bouton_quitter, "Quitter", 50),
         ]
 
+
         for bouton, texte, taille_texte in boutons:
             # Vérifier si la souris est sur le bouton
             if bouton.collidepoint(souris_x, souris_y):
                 couleur = (255, 0, 0)  # Rouge
                 bouton = bouton.inflate(20, 20)  # Agrandir légèrement le bouton
             else:
-                couleur = BORDEAUX
+                couleur = MENUS
+
 
             pygame.draw.rect(fenetre, couleur, bouton)
             texte_rendu = pygame.font.Font(None, taille_texte).render(texte, True, BLANC)
@@ -283,7 +289,9 @@ def afficher_menu():
                 (bouton.centerx - texte_rendu.get_width() // 2, bouton.centery - texte_rendu.get_height() // 2),
             )
 
+
         pygame.display.flip()
+
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -292,19 +300,21 @@ def afficher_menu():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if bouton_jouer.collidepoint(event.pos):
                     return
+                if bouton_crédits.collidepoint(event.pos):
+                    afficher_credits()
                 if bouton_quitter.collidepoint(event.pos):
                     pygame.quit()
                     sys.exit()
 
-
-# Afficher le menu pause
 # Afficher le menu pause
 def afficher_menu_pause():
     while True:
         fenetre.fill(NOIR)
 
+
         # Récupérer la position de la souris
         souris_x, souris_y = pygame.mouse.get_pos()
+
 
         # Boutons
         bouton_continuer = pygame.Rect(LARGEUR // 2 - 250, 230, 520, 100)
@@ -312,6 +322,7 @@ def afficher_menu_pause():
         bouton_paramètres = pygame.Rect(LARGEUR // 2 - 170, 440, 360, 60)
         bouton_crédits = pygame.Rect(LARGEUR // 2 - 140, 520, 300, 70)
         bouton_quitter = pygame.Rect(LARGEUR // 2 - 120, 610, 260, 70)
+
 
         # Liste des boutons et leurs textes
         boutons = [
@@ -322,13 +333,15 @@ def afficher_menu_pause():
             (bouton_quitter, "Quitter", 50),
         ]
 
+
         for bouton, texte, taille_texte in boutons:
             # Vérifier si la souris est sur le bouton
             if bouton.collidepoint(souris_x, souris_y):
                 couleur = (255, 0, 0)  # Rouge
                 bouton = bouton.inflate(20, 20)  # Agrandir légèrement le bouton
             else:
-                couleur = BORDEAUX
+                couleur = MENUS
+
 
             pygame.draw.rect(fenetre, couleur, bouton)
             texte_rendu = pygame.font.Font(None, taille_texte).render(texte, True, BLANC)
@@ -337,7 +350,9 @@ def afficher_menu_pause():
                 (bouton.centerx - texte_rendu.get_width() // 2, bouton.centery - texte_rendu.get_height() // 2),
             )
 
+
         pygame.display.flip()
+
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -345,18 +360,56 @@ def afficher_menu_pause():
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if bouton_continuer.collidepoint(event.pos):
-                    return "continuer"
+                    return
                 if bouton_recommencer.collidepoint(event.pos):
-                    return "recommencer"
+                    return
+                if bouton_crédits.collidepoint(event.pos):
+                    afficher_credits()
                 if bouton_quitter.collidepoint(event.pos):
                     pygame.quit()
                     sys.exit()
 
+def afficher_credits():
+    # Afficher un fond noir
+    fenetre.fill(NOIR)
+    
+    # Liste des prénoms
+    prenoms = ["Eliott", "Iaroslav", "Mohamed", "Ugo"]
+    
+    # Police et taille du texte
+    police = pygame.font.Font(None, 80)
+    
+    # Position de départ pour centrer le texte
+    y_position = HAUTEUR // 2 - len(prenoms) * 50 // 2
+    
+    # Affichage des prénoms
+    for prenom in prenoms:
+        texte = police.render(prenom, True, BLANC)
+        texte_rect = texte.get_rect(center=(LARGEUR // 2, y_position))
+        fenetre.blit(texte, texte_rect)
+        y_position += 50  # Espacement entre chaque prénom
+
+    # Afficher un message pour quitter les crédits
+    texte_quitter = pygame.font.Font(None, 40).render("Cliquez pour revenir au menu", True, BLANC)
+    texte_quitter_rect = texte_quitter.get_rect(center=(LARGEUR // 2, y_position + 100))
+    fenetre.blit(texte_quitter, texte_quitter_rect)
+
+    pygame.display.flip()
+
+    # Attendre que l'utilisateur clique pour revenir au menu
+    en_attente = True
+    while en_attente:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                en_attente = False  # Revenir au menu principal après un clic
 
 # Génération objet
 hopital = generer_hopital(NB_LIGNES, NB_COLONNES)
 cles = placer_cles(hopital, NOMBRE_CLES)
-ennemies = placer_ennemies(hopital, NOMBRE_ENNEMIES)
+enemies = placer_enemies(hopital, NOMBRE_ENEMIES)
 
 # Boucle principale
 afficher_menu()
@@ -373,7 +426,7 @@ while running:
                     cles = placer_cles(hopital, NOMBRE_CLES)
                     joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
                     cles_collectees = 0
-                    positions_ennemies = []  # Réinitialiser la liste des ennemis
+                    positions_enemies = []  # Réinitialiser la liste des ennemis
 
     touches = pygame.key.get_pressed()
     nouvelle_pos = joueur_pos[:]

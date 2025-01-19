@@ -31,9 +31,10 @@ pygame.display.set_caption("Jeu Hôpital")
 horloge = pygame.time.Clock()
 
 # Paramètres jeu
-NOMBRE_CLES = 3
-NOMBRE_ENEMIES = 3
 vitesse = 1
+NOMBRE_CLES = 3
+cles_collectees = 0
+NOMBRE_ENEMIES = 3
 
 # Paramètres vision
 cone_angle = 60  
@@ -140,12 +141,6 @@ def placer_enemies(hopital, NOMBRE_ENEMIES):
         hopital[x][y] = "Y"  # Ajoute un enemie
         case_vide.remove((x, y))
     return enemies
-
-def verifier_collision_ennemi(joueur_pos, ennemies):
-    # Vérifie si le joueur est sur une case contenant un ennemi
-    if tuple(joueur_pos) in ennemies:
-        return True
-    return False
 
 def est_dans_cone(joueur_pos, case_pos, angle, longueur):
     # Vérifie si une case est dans le cône de vision
@@ -493,10 +488,6 @@ while running:
     # Vérifie si déplacement valide
     if deplacement_valide(hopital, nouvelle_pos):
         joueur_pos = nouvelle_pos
-
-    # Vérifier collision avec ennemis
-    if verifier_collision_ennemi(joueur_pos, enemies):
-        running = False  # Arrêter le jeu si une collision avec un ennemi
 
   # Mise à jour caméra pour suivre le joueur
     camera_offset[0] = joueur_pos[0] * TAILLE_CASE - LARGEUR // 2

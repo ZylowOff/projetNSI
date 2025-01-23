@@ -483,6 +483,35 @@ def afficher_victoire():
     pygame.display.flip()
     pygame.time.delay(3000)
 
+def afficher_credits():
+    while True:
+        fenetre.fill(NOIR)
+
+        # Afficher les noms en colonne avec une taille de police plus grande
+        noms = [
+            "Iaroslav Lushcheko",
+            "Eliott Raulet",
+            "Mohamed El Mekkawy",
+            "Ugo Guillemart"
+        ]
+        
+        # Ajuster la position de départ pour centrer verticalement
+        for i, nom in enumerate(noms):
+            texte = pygame.font.Font(None, 80).render(nom, True, BLANC)  # Taille de police augmentée
+            texte_rect = texte.get_rect(center=(LARGEUR // 2, HAUTEUR // 2 - 50 + i * 90))  # Ajustement de la position
+            fenetre.blit(texte, texte_rect)
+
+        # Vérifier les événements
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:  # Retour au menu principal
+                    return
+
+        pygame.display.flip()
+
 # Afficher le menu principal
 def afficher_menu():
     while True:
@@ -533,6 +562,8 @@ def afficher_menu():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if bouton_jouer.collidepoint(event.pos):
                     return
+                if bouton_crédits.collidepoint(event.pos):
+                    afficher_credits()  # Afficher les crédits
                 if bouton_quitter.collidepoint(event.pos):
                     pygame.quit()
                     sys.exit()
@@ -546,11 +577,30 @@ def afficher_menu_pause():
         # Récupérer la position de la souris
         souris_x, souris_y = pygame.mouse.get_pos()
 
+        # Vérifier si la touche Échap est pressée
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if bouton_continuer.collidepoint(event.pos):
+                    return "continuer"
+                if bouton_recommencer.collidepoint(event.pos):
+                    return "recommencer"
+                if bouton_menu_principal.collidepoint(event.pos):
+                    return "menu"
+                if bouton_quitter.collidepoint(event.pos):
+                    pygame.quit()
+                    sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return "continuer"
+
         # Boutons
         bouton_continuer = pygame.Rect(LARGEUR // 2 - 250, 230, 520, 100)
         bouton_recommencer = pygame.Rect(LARGEUR // 2 - 210, 350, 440, 70)
         bouton_paramètres = pygame.Rect(LARGEUR // 2 - 170, 440, 360, 60)
-        bouton_crédits = pygame.Rect(LARGEUR // 2 - 140, 520, 300, 70)
+        bouton_menu_principal = pygame.Rect(LARGEUR // 2 - 140, 520, 300, 70)
         bouton_quitter = pygame.Rect(LARGEUR // 2 - 120, 610, 260, 70)
 
         # Liste des boutons et leurs textes
@@ -558,7 +608,7 @@ def afficher_menu_pause():
             (bouton_continuer, "Continuer", 80),
             (bouton_recommencer, "Recommencer", 60),
             (bouton_paramètres, "Paramètres", 60),
-            (bouton_crédits, "Crédits", 50),
+            (bouton_menu_principal, "Menu Principal", 50),
             (bouton_quitter, "Quitter", 50),
         ]
 
@@ -578,20 +628,6 @@ def afficher_menu_pause():
             )
 
         pygame.display.flip()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if bouton_continuer.collidepoint(event.pos):
-                    return "continuer"
-                if bouton_recommencer.collidepoint(event.pos):
-                    return "recommencer"
-                if bouton_quitter.collidepoint(event.pos):
-                    pygame.quit()
-                    sys.exit()
-
 
 # Placer cette fonction après les autres définitions de fonctions et avant la boucle principale
 def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
@@ -650,6 +686,15 @@ while running:
                     joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
                     cles_collectees = 0
                     ennemis = initialiser_ennemis(hopital, NOMBRE_ENNEMIES)
+                elif choix == "menu":
+                    # Réinitialiser le jeu
+                    hopital = generer_hopital(NB_LIGNES, NB_COLONNES)
+                    cles = placer_cles(hopital, NOMBRE_CLES)
+                    joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
+                    cles_collectees = 0
+                    ennemis = initialiser_ennemis(hopital, NOMBRE_ENNEMIES)
+                    # Retourner au menu
+                    afficher_menu()
 
     # Obtenir la position de la souris
     souris_x, souris_y = pygame.mouse.get_pos()

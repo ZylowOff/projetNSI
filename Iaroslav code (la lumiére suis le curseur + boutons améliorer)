@@ -61,6 +61,11 @@ ennemis = []  # Liste qui contiendra des dictionnaires pour chaque ennemi
 DELAI_MOUVEMENT = 35  # Délai en millisecondes entre chaque mouvement
 dernier_mouvement = 0  # Pour suivre le temps du dernier mouvement
 
+# Optimisation des constantes globales
+TAILLE_CACHE = 100  # Taille du cache pour les calculs trigonométriques
+cos_cache = {i: math.cos(math.radians(i)) for i in range(360)}
+sin_cache = {i: math.sin(math.radians(i)) for i in range(360)}
+
 class Ennemi:
     def __init__(self, x, y):
         self.x = x
@@ -214,7 +219,8 @@ def game_over():
     texte_rect = texte.get_rect(center=(LARGEUR // 2, HAUTEUR // 2))
     fenetre.blit(texte, texte_rect)
     pygame.display.flip()
-    pygame.time.delay(2000)
+    pygame.time.delay(2000)  # Attendre 2 secondes
+    return "menu"  # Retourner au menu
 
 def dessiner_vision_cone(surface, position, angle, length):
     x, y = position
@@ -337,31 +343,19 @@ def placer_ennemies(hopital, NOMBRE_ENNEMIES):
     return ennemies
 
 def est_dans_cone(joueur_pos, case_pos, angle, length):
-    """Vérifie si une case est dans le cône de vision avec optimisation."""
-    joueur_x, joueur_y = joueur_pos
-    case_x, case_y = case_pos
-
-    # Vecteur du joueur vers la case
-    vecteur_x = case_x - joueur_x
-    vecteur_y = case_y - joueur_y
-    distance = math.sqrt(vecteur_x**2 + vecteur_y**2)
-
-    if distance > length:  # En dehors de la portée
+    """Version optimisée de la vérification du cône"""
+    dx = case_pos[0] - joueur_pos[0]
+    dy = case_pos[1] - joueur_pos[1]
+    distance = dx*dx + dy*dy  # Pas besoin de sqrt pour la comparaison
+    
+    if distance > (length/TAILLE_CASE) * (length/TAILLE_CASE):
         return False
-
-    # Calculer l'angle entre la direction du cône et la case
-    angle_case = math.degrees(math.atan2(vecteur_y, vecteur_x))
-    angle_case = (angle_case + 360) % 360  # Normaliser entre 0 et 360
+        
     angle = angle % 360
-
-    # Vérifier si l'angle est dans la plage du cône
-    debut_cone = (angle - cone_angle / 2) % 360
-    fin_cone = (angle + cone_angle / 2) % 360
-
-    if debut_cone < fin_cone:
-        return debut_cone <= angle_case <= fin_cone
-    else:
-        return angle_case >= debut_cone or angle_case <= fin_cone
+    angle_case = math.degrees(math.atan2(dy, dx)) % 360
+    diff_angle = (angle_case - angle + 180) % 360 - 180
+    
+    return abs(diff_angle) <= cone_angle / 2
 
 def est_visible(joueur_pos, case_pos, hopital):
     """Vérifie si une case est visible (dans le cône ou le cercle proche, et pas de mur entre)"""
@@ -386,97 +380,92 @@ def est_visible(joueur_pos, case_pos, hopital):
     return not a_mur_entre(joueur_pos, case_pos, hopital)
 
 def a_mur_entre(joueur_pos, case_pos, hopital):
-    """Vérifie s'il y a un mur entre deux points"""
-    joueur_x, joueur_y = joueur_pos
-    case_x, case_y = case_pos
+    """Version optimisée de la vérification des murs"""
+    x1, y1 = joueur_pos
+    x2, y2 = case_pos
     
-    # Calculer les pas pour l'interpolation
-    dx = case_x - joueur_x
-    dy = case_y - joueur_y
-    distance = max(abs(dx), abs(dy))
+    dx = abs(x2 - x1)
+    dy = abs(y2 - y1)
     
-    if distance == 0:
-        return False
+    x = int(x1)
+    y = int(y1)
     
-    # Normaliser les pas
-    step_x = dx / distance
-    step_y = dy / distance
-    
-    # Vérifier chaque point le long de la ligne
-    x = joueur_x
-    y = joueur_y
-    
-    for _ in range(int(distance)):
-        x += step_x
-        y += step_y
-        grid_x = int(x)
-        grid_y = int(y)
-        
-        if (grid_x != case_x or grid_y != case_y) and hopital[grid_y][grid_x] == "#":
-            return True
-    
+    if dx > dy:
+        err = dx / 2.0
+        while x != int(x2):
+            err -= dy
+            if err < 0:
+                y += 1 if y2 > y1 else -1
+                err += dx
+            x += 1 if x2 > x1 else -1
+            if hopital[y][x] == "#":
+                return True
+    else:
+        err = dy / 2.0
+        while y != int(y2):
+            err -= dx
+            if err < 0:
+                x += 1 if x2 > x1 else -1
+                err += dy
+            y += 1 if y2 > y1 else -1
+            if hopital[y][x] == "#":
+                return True
+                
     return False
 
 def dessiner_hopital(hopital, joueur_pos, camera_offset):
+    """Version optimisée du rendu"""
     fenetre.fill(NOIR)
     
-    # Calculer les limites visibles de l'écran
-    debut_x = max(0, int(camera_offset[0] // TAILLE_CASE))
-    debut_y = max(0, int(camera_offset[1] // TAILLE_CASE))
-    fin_x = min(len(hopital[0]), int((camera_offset[0] + LARGEUR) // TAILLE_CASE + 1))
-    fin_y = min(len(hopital), int((camera_offset[1] + HAUTEUR) // TAILLE_CASE + 1))
+    # Calculer les limites visibles avec une marge
+    marge = 2
+    debut_x = max(0, int(camera_offset[0] // TAILLE_CASE) - marge)
+    debut_y = max(0, int(camera_offset[1] // TAILLE_CASE) - marge)
+    fin_x = min(len(hopital[0]), int((camera_offset[0] + LARGEUR) // TAILLE_CASE) + marge)
+    fin_y = min(len(hopital), int((camera_offset[1] + HAUTEUR) // TAILLE_CASE) + marge)
     
-    # Créer une surface temporaire pour le rendu initial
+    # Pré-calculer les offsets de caméra
+    cam_x = camera_offset[0]
+    cam_y = camera_offset[1]
+    
+    # Surface temporaire pour le rendu de base
     temp_surface = pygame.Surface((LARGEUR, HAUTEUR))
     temp_surface.fill(NOIR)
     
-    # Premier rendu : dessiner tout sauf les objets spéciaux
+    # Rendu de base (murs et sol)
     for i in range(debut_y, fin_y):
+        y = i * TAILLE_CASE - cam_y
         for j in range(debut_x, fin_x):
-            x = j * TAILLE_CASE - camera_offset[0]
-            y = i * TAILLE_CASE - camera_offset[1]
-            
-            case = hopital[i][j]
-            
-            if case == "#":
-                couleur = MUR
-            else:
-                couleur = SOL
-                
+            x = j * TAILLE_CASE - cam_x
+            couleur = MUR if hopital[i][j] == "#" else SOL
             pygame.draw.rect(temp_surface, couleur, (x, y, TAILLE_CASE, TAILLE_CASE))
     
-    # Copier sur la fenêtre principale
     fenetre.blit(temp_surface, (0, 0))
     
     # Appliquer le masque de vision
     joueur_centre = (
-        joueur_pos[0] * TAILLE_CASE - camera_offset[0] + TAILLE_CASE // 2,
-        joueur_pos[1] * TAILLE_CASE - camera_offset[1] + TAILLE_CASE // 2
+        joueur_pos[0] * TAILLE_CASE - cam_x + TAILLE_CASE // 2,
+        joueur_pos[1] * TAILLE_CASE - cam_y + TAILLE_CASE // 2
     )
     appliquer_masque_vision(fenetre, joueur_centre, angle_de_vue, cone_length)
     
-    # Deuxième rendu : dessiner les objets spéciaux uniquement dans la zone visible
+    # Rendu des objets spéciaux
     for i in range(debut_y, fin_y):
+        y = i * TAILLE_CASE - cam_y
         for j in range(debut_x, fin_x):
             case = hopital[i][j]
-            if case in ["S", "C", "Y"]:
+            if case in ["S", "C"]:  # Exclure "Y" car les ennemis sont gérés séparément
                 if est_visible(joueur_pos, (j, i), hopital):
-                    x = j * TAILLE_CASE - camera_offset[0]
-                    y = i * TAILLE_CASE - camera_offset[1]
-                    
-                    if case == "S":
-                        couleur = SORTIE
-                    elif case == "C":
-                        couleur = CLE
-                    elif case == "Y":
-                        couleur = ENNEMIES
-                        
+                    x = j * TAILLE_CASE - cam_x
+                    couleur = SORTIE if case == "S" else CLE
                     pygame.draw.rect(fenetre, couleur, (x, y, TAILLE_CASE, TAILLE_CASE))
     
     # Dessiner le joueur
-    joueur_ecran_x = joueur_pos[0] * TAILLE_CASE - camera_offset[0]
-    joueur_ecran_y = joueur_pos[1] * TAILLE_CASE - camera_offset[1]
-    pygame.draw.rect(fenetre, JOUEUR, (joueur_ecran_x, joueur_ecran_y, TAILLE_CASE, TAILLE_CASE))
+    pygame.draw.rect(fenetre, JOUEUR, (
+        joueur_pos[0] * TAILLE_CASE - cam_x,
+        joueur_pos[1] * TAILLE_CASE - cam_y,
+        TAILLE_CASE, TAILLE_CASE
+    ))
 
 # Vérification de la validité du déplacement
 def deplacement_valide(hopital, pos):
@@ -660,7 +649,7 @@ while running:
                     cles = placer_cles(hopital, NOMBRE_CLES)
                     joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
                     cles_collectees = 0
-                    positions_ennemies = []
+                    ennemis = initialiser_ennemis(hopital, NOMBRE_ENNEMIES)
 
     # Obtenir la position de la souris
     souris_x, souris_y = pygame.mouse.get_pos()
@@ -705,6 +694,18 @@ while running:
     camera_offset[0] = joueur_pos[0] * TAILLE_CASE - LARGEUR // 2
     camera_offset[1] = joueur_pos[1] * TAILLE_CASE - HAUTEUR // 2
 
+    # Vérifier la collision avec les ennemis
+    if verifier_collision_ennemis(joueur_pos, ennemis):
+        if game_over() == "menu":
+            # Réinitialiser le jeu
+            hopital = generer_hopital(NB_LIGNES, NB_COLONNES)
+            cles = placer_cles(hopital, NOMBRE_CLES)
+            joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
+            cles_collectees = 0
+            ennemis = initialiser_ennemis(hopital, NOMBRE_ENNEMIES)
+            # Retourner au menu
+            afficher_menu()
+
     # Dessiner l'hôpital
     dessiner_hopital(hopital, joueur_pos, camera_offset)
 
@@ -744,6 +745,6 @@ while running:
     dessiner_compteur_cles(fenetre, cles_collectees, NOMBRE_CLES)
     
     pygame.display.flip()
-    horloge.tick(30)
+    horloge.tick(60)  # Limiter à 60 FPS
 
 pygame.quit()

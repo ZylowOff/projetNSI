@@ -66,6 +66,13 @@ TAILLE_CACHE = 100  # Taille du cache pour les calculs trigonométriques
 cos_cache = {i: math.cos(math.radians(i)) for i in range(360)}
 sin_cache = {i: math.sin(math.radians(i)) for i in range(360)}
 
+# Ajouter une variable pour suivre l'index de la case sélectionnée
+index_case_selectionnee = 0
+
+# Ajouter ces variables pour les résolutions
+RESOLUTIONS = [(800, 600), (1024, 768), (1280, 720), (1920, 1080)]
+resolution_index = 0  # Index de la résolution sélectionnée
+
 class Ennemi:
     def __init__(self, x, y):
         self.x = x
@@ -525,14 +532,14 @@ def afficher_menu():
         souris_x, souris_y = pygame.mouse.get_pos()
 
         # Boutons
-        bouton_paramètres = pygame.Rect(LARGEUR // 2 - 170, 350, 340, 70)
+        bouton_parametres = pygame.Rect(LARGEUR // 2 - 170, 350, 340, 70)
         bouton_jouer = pygame.Rect(LARGEUR // 2 - 230, 440, 460, 100)
         bouton_crédits = pygame.Rect(LARGEUR // 2 - 150, 560, 300, 70)
         bouton_quitter = pygame.Rect(LARGEUR // 2 - 120, 650, 240, 70)
 
         # Liste des boutons et leurs textes
         boutons = [
-            (bouton_paramètres, "Paramètres", 50),
+            (bouton_parametres, "Paramètres", 50),
             (bouton_jouer, "Jouer", 100),
             (bouton_crédits, "Crédits", 50),
             (bouton_quitter, "Quitter", 50),
@@ -564,13 +571,15 @@ def afficher_menu():
                     return
                 if bouton_crédits.collidepoint(event.pos):
                     afficher_credits()  # Afficher les crédits
+                if bouton_parametres.collidepoint(event.pos):
+                    afficher_parametres()  # Afficher les paramètres
                 if bouton_quitter.collidepoint(event.pos):
                     pygame.quit()
                     sys.exit()
 
-
 # Afficher le menu pause
 def afficher_menu_pause():
+    global resolution_index, LARGEUR, HAUTEUR, fenetre
     while True:
         fenetre.fill(NOIR)
 
@@ -592,6 +601,9 @@ def afficher_menu_pause():
                 if bouton_quitter.collidepoint(event.pos):
                     pygame.quit()
                     sys.exit()
+                if bouton_parametres.collidepoint(event.pos):
+                    afficher_parametres()  # Afficher les paramètres
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return "continuer"
@@ -599,7 +611,7 @@ def afficher_menu_pause():
         # Boutons
         bouton_continuer = pygame.Rect(LARGEUR // 2 - 250, 230, 520, 100)
         bouton_recommencer = pygame.Rect(LARGEUR // 2 - 210, 350, 440, 70)
-        bouton_paramètres = pygame.Rect(LARGEUR // 2 - 170, 440, 360, 60)
+        bouton_parametres = pygame.Rect(LARGEUR // 2 - 170, 440, 360, 60)
         bouton_menu_principal = pygame.Rect(LARGEUR // 2 - 140, 520, 300, 70)
         bouton_quitter = pygame.Rect(LARGEUR // 2 - 120, 610, 260, 70)
 
@@ -607,7 +619,7 @@ def afficher_menu_pause():
         boutons = [
             (bouton_continuer, "Continuer", 80),
             (bouton_recommencer, "Recommencer", 60),
-            (bouton_paramètres, "Paramètres", 60),
+            (bouton_parametres, "Paramètres", 60),
             (bouton_menu_principal, "Menu Principal", 50),
             (bouton_quitter, "Quitter", 50),
         ]
@@ -665,7 +677,7 @@ def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
     )
     surface.blit(surface_texte, pos_texte)
 
-# Ajouter une nouvelle fonction pour dessiner l'inventaire
+# Modifier la fonction pour dessiner l'inventaire
 def dessiner_inventaire(surface, nombre_cases=9):
     # Dimensions de l'inventaire
     largeur_case = 60  # Taille réduite
@@ -677,8 +689,50 @@ def dessiner_inventaire(surface, nombre_cases=9):
     # Dessiner les cases de l'inventaire
     for i in range(nombre_cases):
         case_rect = pygame.Rect(inventaire_x + i * (largeur_case + marge), inventaire_y, largeur_case, hauteur_case)
+        
+        # Si c'est la case sélectionnée, l'agrandir
+        if i == index_case_selectionnee:
+            case_rect = pygame.Rect(inventaire_x + i * (largeur_case + marge) - 5, inventaire_y - 5, largeur_case + 10, hauteur_case + 10)
+
         # Dessiner uniquement le contour des cases
         pygame.draw.rect(surface, BLANC, case_rect, 2)  # Bordure blanche
+
+def afficher_parametres():
+    global resolution_index, LARGEUR, HAUTEUR, fenetre
+    while True:
+        fenetre.fill(NOIR)
+
+        # Titre des paramètres
+        titre = pygame.font.Font(None, 60).render("Paramètres", True, BLANC)
+        fenetre.blit(titre, (LARGEUR // 2 - titre.get_width() // 2, 50))
+
+        # Afficher les résolutions disponibles
+        for i, (largeur, hauteur) in enumerate(RESOLUTIONS):
+            resolution_texte = f"{largeur} x {hauteur}"
+            couleur = BLANC if i == resolution_index else GRIS  # Mettre en surbrillance la résolution sélectionnée
+            texte = pygame.font.Font(None, 40).render(resolution_texte, True, couleur)
+            fenetre.blit(texte, (LARGEUR // 2 - texte.get_width() // 2, 150 + i * 50))  # Espacement vertical
+
+        # Vérifier les événements
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:  # Retour au menu principal
+                    return
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                # Vérifier si la souris est sur une résolution
+                for i in range(len(RESOLUTIONS)):
+                    if (LARGEUR // 2 - 100 < pygame.mouse.get_pos()[0] < LARGEUR // 2 + 100 and
+                        150 + i * 50 < pygame.mouse.get_pos()[1] < 150 + (i + 1) * 50):
+                        resolution_index = i
+                        # Mettre à jour la taille de la fenêtre
+                        LARGEUR, HAUTEUR = RESOLUTIONS[resolution_index]
+                        fenetre = pygame.display.set_mode((LARGEUR, HAUTEUR), pygame.RESIZABLE)  # Changer la résolution
+
+        pygame.display.flip()
 
 # Génération objet
 hopital = generer_hopital(NB_LIGNES, NB_COLONNES)
@@ -710,6 +764,11 @@ while running:
                     ennemis = initialiser_ennemis(hopital, NOMBRE_ENNEMIES)
                     # Retourner au menu
                     afficher_menu()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 4:  # Molette de la souris vers le haut
+                index_case_selectionnee = (index_case_selectionnee - 1) % 9  # Sélectionner la case précédente
+            elif event.button == 5:  # Molette de la souris vers le bas
+                index_case_selectionnee = (index_case_selectionnee + 1) % 9  # Sélectionner la case suivante
 
     # Obtenir la position de la souris
     souris_x, souris_y = pygame.mouse.get_pos()

@@ -33,7 +33,7 @@ horloge = pygame.time.Clock()
 # Paramètres de jeu
 NOMBRE_CLES = 3  # Nombre de clés à collecter pour gagner
 cles_collectees = 0  # Compteur de clés collectées
-NOMBRE_ENNEMIES = 1
+NOMBRE_ENNEMIES = 5
 VITESSE_ENNEMIE = 0.4  # Augmentation de la vitesse des ennemis
 
 # Paramètres de la vision
@@ -44,8 +44,8 @@ cone_length = 600  # Augmentation de la longueur du cône de vision (était 375)
 RAYON_VISION_PROCHE = 100  # Rayon du cercle de vision autour du joueur
 
 # Génération initiale
-NB_LIGNES = (HAUTEUR // TAILLE_CASE) * 2
-NB_COLONNES = (LARGEUR // TAILLE_CASE) * 2
+NB_LIGNES = (HAUTEUR // TAILLE_CASE) * 8
+NB_COLONNES = (LARGEUR // TAILLE_CASE) * 8
 print("NB_LIGNES :", NB_LIGNES, "NB_COLONNES :", NB_COLONNES)  # Vérification
 joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
 camera_offset = [0, 0]
@@ -665,6 +665,21 @@ def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
     )
     surface.blit(surface_texte, pos_texte)
 
+# Ajouter une nouvelle fonction pour dessiner l'inventaire
+def dessiner_inventaire(surface, nombre_cases=9):
+    # Dimensions de l'inventaire
+    largeur_case = 60  # Taille réduite
+    hauteur_case = 60  # Taille réduite
+    marge = 10
+    inventaire_x = (LARGEUR - (nombre_cases * largeur_case + (nombre_cases - 1) * marge)) // 2
+    inventaire_y = HAUTEUR - hauteur_case - 20  # Positionner l'inventaire en bas
+
+    # Dessiner les cases de l'inventaire
+    for i in range(nombre_cases):
+        case_rect = pygame.Rect(inventaire_x + i * (largeur_case + marge), inventaire_y, largeur_case, hauteur_case)
+        # Dessiner uniquement le contour des cases
+        pygame.draw.rect(surface, BLANC, case_rect, 2)  # Bordure blanche
+
 # Génération objet
 hopital = generer_hopital(NB_LIGNES, NB_COLONNES)
 cles = placer_cles(hopital, NOMBRE_CLES)
@@ -753,6 +768,9 @@ while running:
 
     # Dessiner l'hôpital
     dessiner_hopital(hopital, joueur_pos, camera_offset)
+
+    # Dessiner l'inventaire
+    dessiner_inventaire(fenetre)
 
     # Collecte des clés
     if hopital[joueur_pos[1]][joueur_pos[0]] == "C":

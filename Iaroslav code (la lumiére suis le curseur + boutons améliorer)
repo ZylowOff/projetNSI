@@ -509,6 +509,42 @@ def afficher_menu_pause():
                     sys.exit()
 
 
+# Placer cette fonction après les autres définitions de fonctions et avant la boucle principale
+def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
+    # Position du compteur (coin supérieur droit)
+    marge = 20
+    taille_icone = 30
+    espacement = 10
+    
+    # Dessiner le fond du compteur
+    fond_rect = pygame.Rect(
+        LARGEUR - (marge + taille_icone + 80),
+        marge,
+        taille_icone + 80,
+        taille_icone + 10
+    )
+    pygame.draw.rect(surface, BORDEAUX, fond_rect)
+    pygame.draw.rect(surface, BLANC, fond_rect, 2)  # Bordure blanche
+    
+    # Dessiner l'icône de clé
+    icone_cle = pygame.Rect(
+        LARGEUR - (marge + taille_icone),
+        marge + 5,
+        taille_icone,
+        taille_icone
+    )
+    pygame.draw.rect(surface, CLE, icone_cle)
+    
+    # Afficher le texte du compteur
+    texte = f"{cles_collectees}/{nombre_cles_total}"
+    police = pygame.font.Font(None, 36)
+    surface_texte = police.render(texte, True, BLANC)
+    pos_texte = (
+        LARGEUR - (marge + taille_icone + espacement + surface_texte.get_width()),
+        marge + 8
+    )
+    surface.blit(surface_texte, pos_texte)
+
 # Génération objet
 hopital = generer_hopital(NB_LIGNES, NB_COLONNES)
 cles = placer_cles(hopital, NOMBRE_CLES)
@@ -609,6 +645,9 @@ while running:
         afficher_victoire()
         running = False
 
+    # Dessiner le compteur de clés après avoir dessiné tout le reste
+    dessiner_compteur_cles(fenetre, cles_collectees, NOMBRE_CLES)
+    
     pygame.display.flip()
     horloge.tick(120)
 

@@ -17,9 +17,11 @@ BLANC = (255, 255, 255)
 GRIS = (200, 200, 200)
 JOUEUR = (41, 27, 14)
 SORTIE = (0, 255, 0)
-MUR = (26, 0, 8)
+MUR = (100, 40, 30)
 SOL = (115, 109, 115)
 CLE = (255, 223, 0)
+ENNEMIES = (255, 0, 0)
+BORDEAUX = (40, 0, 0)
 
 # Création de la fenêtre principale
 fenetre = pygame.display.set_mode((LARGEUR, HAUTEUR))
@@ -31,47 +33,196 @@ horloge = pygame.time.Clock()
 # Paramètres de jeu
 NOMBRE_CLES = 3  # Nombre de clés à collecter pour gagner
 cles_collectees = 0  # Compteur de clés collectées
+NOMBRE_ENNEMIES = 5
+VITESSE_ENNEMIE = 0.8  # Augmentation de la vitesse des ennemis
 
 # Paramètres de la vision
 cone_angle = 60  # Angle du cône de vision en degrés
 cone_length = 375  # Longueur du cône de vision
 
+# Génération initiale
+NB_LIGNES = (HAUTEUR // TAILLE_CASE) * 8
+NB_COLONNES = (LARGEUR // TAILLE_CASE) * 8
+print("NB_LIGNES :", NB_LIGNES, "NB_COLONNES :", NB_COLONNES)  # Vérification
+joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
+camera_offset = [0, 0]
+
+# Vitesse de déplacement
+vitesse = 1
+compteur_deplacement = 10
+
+# Initialisation de l'angle de vue avec une valeur par défaut
+angle_de_vue = 270  # 0 = droite, 90 = bas, 180 = gauche, 270 = haut
+derniere_direction = (0, 0)  # Direction initiale (aucune touche appuyée)
+
+# Structure pour stocker les ennemis avec leurs positions et directions
+ennemis = []  # Liste qui contiendra des dictionnaires pour chaque ennemi
+
+class Ennemi:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.direction = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+        self.compteur_deplacement = 0
+        self.cone_vision = 8
+        self.angle_vision = 120
+        self.vitesse_normale = VITESSE_ENNEMIE
+        self.vitesse_lente = VITESSE_ENNEMIE * 0.3
+        self.vitesse_actuelle = self.vitesse_lente
+        # Nouvelles variables pour la mémoire
+        self.derniere_pos_joueur = None
+        self.temps_memoire = 0
+        self.duree_memoire_max = 180  # Environ 3 secondes à 60 FPS
+
+    def peut_voir_joueur(self, joueur_pos, hopital):
+        # Calculer la distance entre l'ennemi et le joueur
+        dx = joueur_pos[0] - self.x
+        dy = joueur_pos[1] - self.y
+        distance = math.sqrt(dx*dx + dy*dy)
+        
+        if distance > self.cone_vision:
+            return False
+            
+        # Vérification de la ligne de vue (pas d'obstacles)
+        x, y = self.x, self.y
+        pas = 0.1
+        longueur = math.sqrt(dx*dx + dy*dy)
+        if longueur > 0:
+            dx, dy = dx/longueur, dy/longueur
+            for i in range(int(longueur/pas)):
+                x += dx * pas
+                y += dy * pas
+                if hopital[int(y)][int(x)] == "#":
+                    return False
+        return True
+
+def initialiser_ennemis(hopital, nombre_ennemis):
+    ennemis = []
+    cases_vides = [(j, i) for i, ligne in enumerate(hopital) 
+                   for j, case in enumerate(ligne) if case == " "]
+    
+    for _ in range(nombre_ennemis):
+        if cases_vides:
+            x, y = random.choice(cases_vides)
+            ennemis.append(Ennemi(x, y))
+            cases_vides.remove((x, y))
+    return ennemis
+
+def deplacer_ennemis(hopital, ennemis, joueur_pos):
+    for ennemi in ennemis:
+        voit_joueur = ennemi.peut_voir_joueur(joueur_pos, hopital)
+        
+        if voit_joueur:
+            # Mettre à jour la dernière position connue du joueur
+            ennemi.derniere_pos_joueur = joueur_pos[:]
+            ennemi.temps_memoire = ennemi.duree_memoire_max
+            ennemi.vitesse_actuelle = ennemi.vitesse_normale
+        elif ennemi.temps_memoire > 0:
+            # L'ennemi ne voit plus le joueur mais se souvient de sa position
+            ennemi.temps_memoire -= 1
+            ennemi.vitesse_actuelle = ennemi.vitesse_normale * 0.7  # Légèrement plus lent pendant la poursuite de mémoire
+        else:
+            # L'ennemi a complètement perdu la trace du joueur
+            ennemi.derniere_pos_joueur = None
+            ennemi.vitesse_actuelle = ennemi.vitesse_lente
+
+        ennemi.compteur_deplacement += ennemi.vitesse_actuelle
+        if ennemi.compteur_deplacement >= 1:
+            ennemi.compteur_deplacement = 0
+            
+            if voit_joueur or (ennemi.derniere_pos_joueur is not None and ennemi.temps_memoire > 0):
+                # Utiliser soit la position actuelle du joueur, soit la dernière position connue
+                cible = joueur_pos if voit_joueur else ennemi.derniere_pos_joueur
+                
+                dx = cible[0] - ennemi.x
+                dy = cible[1] - ennemi.y
+                
+                if abs(dx) > abs(dy):
+                    nouveau_x = ennemi.x + (1 if dx > 0 else -1)
+                    nouveau_y = ennemi.y
+                    if not deplacement_valide(hopital, [nouveau_x, nouveau_y]):
+                        nouveau_x = ennemi.x
+                        nouveau_y = ennemi.y + (1 if dy > 0 else -1)
+                else:
+                    nouveau_y = ennemi.y + (1 if dy > 0 else -1)
+                    nouveau_x = ennemi.x
+                    if not deplacement_valide(hopital, [nouveau_x, nouveau_y]):
+                        nouveau_x = ennemi.x + (1 if dx > 0 else -1)
+                        nouveau_y = ennemi.y
+                        
+                # Si l'ennemi atteint la dernière position connue et ne voit pas le joueur
+                if not voit_joueur and ennemi.derniere_pos_joueur:
+                    if abs(ennemi.x - ennemi.derniere_pos_joueur[0]) <= 1 and \
+                       abs(ennemi.y - ennemi.derniere_pos_joueur[1]) <= 1:
+                        ennemi.temps_memoire = 0  # Arrêter la poursuite
+                        ennemi.derniere_pos_joueur = None
+            else:
+                # Comportement aléatoire plus lent
+                if random.random() < 0.05:
+                    ennemi.direction = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+                
+                nouveau_x = ennemi.x + ennemi.direction[0]
+                nouveau_y = ennemi.y + ennemi.direction[1]
+            
+            if deplacement_valide(hopital, [nouveau_x, nouveau_y]):
+                ennemi.x = nouveau_x
+                ennemi.y = nouveau_y
+            else:
+                ennemi.direction = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+
+def dessiner_vision_ennemis(surface, ennemi, camera_offset):
+    # Dessiner le cône de vision des ennemis (pour le débogage)
+    x = ennemi.x * TAILLE_CASE - camera_offset[0] + TAILLE_CASE // 2
+    y = ennemi.y * TAILLE_CASE - camera_offset[1] + TAILLE_CASE // 2
+    
+    # Déterminer l'angle de base selon la direction
+    angle_base = 0
+    if ennemi.direction == (0, -1): angle_base = 270
+    elif ennemi.direction == (0, 1): angle_base = 90
+    elif ennemi.direction == (-1, 0): angle_base = 180
+    elif ennemi.direction == (1, 0): angle_base = 0
+    
+    start_angle = math.radians(angle_base - ennemi.angle_vision / 2)
+    end_angle = math.radians(angle_base + ennemi.angle_vision / 2)
+    
+    points = [(x, y)]
+    steps = 20
+    for i in range(steps + 1):
+        theta = start_angle + (end_angle - start_angle) * i / steps
+        px = x + math.cos(theta) * ennemi.cone_vision * TAILLE_CASE / 10
+        py = y + math.sin(theta) * ennemi.cone_vision * TAILLE_CASE / 10
+        points.append((px, py))
+    
+    # Dessiner le cône de vision en semi-transparent
+    s = pygame.Surface((LARGEUR, HAUTEUR), pygame.SRCALPHA)
+    pygame.draw.polygon(s, (255, 0, 0, 30), points)
+    surface.blit(s, (0, 0))
+
+def verifier_collision_ennemis(joueur_pos, ennemis):
+    for ennemi in ennemis:
+        if (abs(joueur_pos[0] - ennemi.x) < 1 and 
+            abs(joueur_pos[1] - ennemi.y) < 1):
+            return True
+    return False
+
+def game_over():
+    fenetre.fill(NOIR)
+    texte = pygame.font.Font(None, 60).render("Game Over!", True, BLANC)
+    texte_rect = texte.get_rect(center=(LARGEUR // 2, HAUTEUR // 2))
+    fenetre.blit(texte, texte_rect)
+    pygame.display.flip()
+    pygame.time.delay(2000)
+
 def dessiner_vision_cone(surface, position, angle, length):
     x, y = position
-    start_angle = math.radians(angle - cone_angle / 2)  # Début du cône
-    end_angle = math.radians(angle + cone_angle / 2)    # Fin du cône
-    points = [position]  # Le sommet du cône (position du joueur)
-
-    # Ajout des points du périmètre du cône
-    steps = 50  # Plus de steps = un cône plus lisse
+    start_angle = math.radians(angle - cone_angle / 2)
+    end_angle = math.radians(angle + cone_angle / 2)
+    points = [position]
+    steps = 50
     for i in range(steps + 1):
         theta = start_angle + i * (end_angle - start_angle) / steps
-        point_x = x + length * math.cos(theta)
-        point_y = y + length * math.sin(theta)
-        points.append((point_x, point_y))
-
-    # Dessiner le cône
-    pygame.draw.polygon(surface, BLANC, points, 0)
-
-    masque = pygame.Surface((LARGEUR, HAUTEUR))  # Crée un masque couvrant toute la fenêtre
-    masque.fill(NOIR)  # Remplit le masque de noir
-
-    x, y = position
-    start_angle = math.radians(angle - cone_angle / 2)  # Début du cône
-    end_angle = math.radians(angle + cone_angle / 2)    # Fin du cône
-    points = [position]  # Sommet du cône (position du joueur)
-
-    # Ajout des points du périmètre du cône
-    steps = 50  # Plus de steps = cône plus lisse
-    for i in range(steps + 1):
-        theta = start_angle + i * (end_angle - start_angle) / steps
-        point_x = x + length * math.cos(theta)
-        point_y = y + length * math.sin(theta)
-        points.append((point_x, point_y))
-
-    # Découpe un trou dans le masque pour le cône de vision
-    pygame.draw.polygon(masque, (0, 0, 0, 0), points)  # Surface transparente pour le cône
-    surface.blit(masque, (0, 0))  # Applique le masque sur l'écran
+        points.append((x + length * math.cos(theta), y + length * math.sin(theta)))
+    pygame.draw.polygon(surface, BLANC, points)
 
 def appliquer_masque_vision(surface, position, angle, length):
     # Crée un masque couvrant toute la fenêtre
@@ -92,49 +243,26 @@ def appliquer_masque_vision(surface, position, angle, length):
         points.append((point_x, point_y))
 
     # Découpe un trou transparent dans le masque pour le cône de vision
-    pygame.draw.polygon(masque, (0, 0, 0, 0), points)  # Zone transparente pour le cône
+    pygame.draw.polygon(masque, (0, 0, 0, 0), points)
 
     # Applique le masque sur l'écran
     surface.blit(masque, (0, 0))
 
-def dessiner_zone_vision_circulaire(surface, position, rayon):
-    x, y = position
-    for i in range(-rayon, rayon+1):  # Parcourt chaque case autour du joueur
-        for j in range(-rayon, rayon+1):
-            # Calcule la distance du joueur à la case
-            distance = math.sqrt(i**2 + j**2)
-            if distance <= rayon:
-                # Si la case est dans le rayon, on la dessine si elle est accessible
-                if 0 <= x + i < len(hopital[0]) and 0 <= y + j < len(hopital):
-                    case = hopital[y + j][x + i]
-                    case_x = (x + i) * TAILLE_CASE
-                    case_y = (y + j) * TAILLE_CASE
-                    # Dessiner la case en fonction de son type
-                    if case == "#":  # Mur
-                        pygame.draw.rect(surface, MUR, (case_x, case_y, TAILLE_CASE, TAILLE_CASE))
-                    elif case == "S":  # Sortie
-                        pygame.draw.rect(surface, SORTIE, (case_x, case_y, TAILLE_CASE, TAILLE_CASE))
-                    elif case == "C":  # Clé
-                        pygame.draw.rect(surface, CLE, (case_x, case_y, TAILLE_CASE, TAILLE_CASE))
-                    elif case == " ":  # Sol
-                        pygame.draw.rect(surface, SOL, (case_x, case_y, TAILLE_CASE, TAILLE_CASE))
-
 def generer_hopital(nb_lignes, nb_colonnes):
-    """Génère un labyrinthe avec des murs, des chemins et une sortie."""
-    nb_lignes = (nb_lignes // 3) * 3 + 1
-    nb_colonnes = (nb_colonnes // 3) * 3 + 1
+    nb_lignes = (nb_lignes // 3) * 3 + 1  # Ajuste les dimensions pour garantir un labyrinthe valide
+    nb_colonnes = (nb_colonnes // 3)* 3 + 1
     hopital = [["#" for _ in range(nb_colonnes)] for _ in range(nb_lignes)]
 
     def voisins(x, y):
         directions = [(6, 0), (-6, 0), (0, 6), (0, -6)]
-        random.shuffle(directions)
+        random.shuffle(directions)  # Mélange pour générer des labyrinthes variés
         return [
             (x + dx, y + dy)
             for dx, dy in directions
             if 0 <= x + dx < nb_colonnes and 0 <= y + dy < nb_lignes
         ]
 
-    def creuser(x, y):
+    def départ(x, y):
         for i in range(-1, 2):
             for j in range(-1, 2):
                 if 0 <= y + i < nb_lignes and 0 <= x + j < nb_colonnes:
@@ -145,53 +273,65 @@ def generer_hopital(nb_lignes, nb_colonnes):
                     for j in range(-3, 4):
                         if 0 <= (y + ny) // 2 + i < nb_lignes and 0 <= (x + nx) // 2 + j < nb_colonnes:
                             hopital[(y + ny) // 2 + i][(x + nx) // 2 + j] = " "
-                creuser(nx, ny)
+                départ(nx, ny)
 
-    creuser(nb_colonnes // 2, nb_lignes // 2)
+    départ(nb_colonnes // 2, nb_lignes // 2)  # Commencer au centre du labyrinthe
 
-    # Ajout d'une sortie
+    # Ajoute une sortie sur un bord aléatoire
     bords = [
-        (0, random.randint(1, nb_colonnes - 2)),
-        (nb_lignes - 1, random.randint(1, nb_colonnes - 2)),
-        (random.randint(1, nb_lignes - 2), 0),
-        (random.randint(1, nb_lignes - 2), nb_colonnes - 1)
+        (0, random.randint(1, nb_colonnes - 2)),  # Bord supérieur
+        (nb_lignes - 1, random.randint(1, nb_colonnes - 2)),  # Bord inférieur
+        (random.randint(1, nb_lignes - 2), 0),  # Bord gauche
+        (random.randint(1, nb_lignes - 2), nb_colonnes - 1)  # Bord droit
     ]
     random.shuffle(bords)
     for sortie_y, sortie_x in bords:
         if hopital[sortie_y][sortie_x] == " ":
-            hopital[sortie_y][sortie_x] = "S"
+            hopital[sortie_y][sortie_x] = "S"  # Marque la sortie
             break
 
     return hopital
 
-
+# Fonction pour placer les clés dans le labyrinthe
 def placer_cles(hopital, nombre_cles):
-    """Place un certain nombre de clés dans les cases vides du labyrinthe."""
     cles = []
     cases_vides = [(i, j) for i, ligne in enumerate(hopital) for j, case in enumerate(ligne) if case == " "]
     for _ in range(nombre_cles):
         x, y = random.choice(cases_vides)
         cles.append((x, y))
-        hopital[x][y] = "C"
+        hopital[x][y] = "C"  # Ajoute une clé à cet emplacement
         cases_vides.remove((x, y))
     return cles
 
+def placer_ennemies(hopital, NOMBRE_ENNEMIES):
+    ennemies = []
+    case_vide = [(i, j) for i, ligne in enumerate(hopital) for j, case in enumerate(ligne) if case == " "]
+    for j in range(NOMBRE_ENNEMIES):
+        x, y = random.choice(case_vide)
+        ennemies.append((x, y))
+        hopital[x][y] = "Y"  # Ajoute un ennemie à cet emplacement
+        case_vide.remove((x, y))
+    return ennemies
 
 def est_dans_cone(joueur_pos, case_pos, angle, length):
-    """Vérifie si une case est visible dans le cône de vision."""
+    """Vérifie si une case est dans le cône de vision avec optimisation."""
     joueur_x, joueur_y = joueur_pos
     case_x, case_y = case_pos
 
+    # Vecteur du joueur vers la case
     vecteur_x = case_x - joueur_x
     vecteur_y = case_y - joueur_y
-    distance = math.sqrt(vecteur_x ** 2 + vecteur_y ** 2)
+    distance = math.sqrt(vecteur_x**2 + vecteur_y**2)
 
-    if distance > length:
+    if distance > length:  # En dehors de la portée
         return False
 
-    angle_case = math.degrees(math.atan2(vecteur_y, vecteur_x)) % 360
+    # Calculer l'angle entre la direction du cône et la case
+    angle_case = math.degrees(math.atan2(vecteur_y, vecteur_x))
+    angle_case = (angle_case + 360) % 360  # Normaliser entre 0 et 360
     angle = angle % 360
 
+    # Vérifier si l'angle est dans la plage du cône
     debut_cone = (angle - cone_angle / 2) % 360
     fin_cone = (angle + cone_angle / 2) % 360
 
@@ -200,43 +340,53 @@ def est_dans_cone(joueur_pos, case_pos, angle, length):
     else:
         return angle_case >= debut_cone or angle_case <= fin_cone
 
-
 def dessiner_hopital(hopital, joueur_pos, camera_offset):
-    """Dessine l'hôpital et le joueur."""
-    fenetre.fill(NOIR)
-
+    """Optimisation du dessin de l'hôpital avec les objets dans le cône de vision."""
+    fenetre.fill(NOIR)  # Fond noir
     joueur_x, joueur_y = joueur_pos
-    camera_x_offset, camera_y_offset = camera_offset
-
+    
+    # Pré-calculer l'offset de la caméra une seule fois pour chaque case
+    camera_x_offset = camera_offset[0]
+    camera_y_offset = camera_offset[1]
+    
+    # Dessiner l'hôpital
     for i, ligne in enumerate(hopital):
         for j, case in enumerate(ligne):
+            # Convertir les coordonnées de la case en pixels
             x = j * TAILLE_CASE - camera_x_offset
             y = i * TAILLE_CASE - camera_y_offset
 
-            if case == "#":
+            # Ne vérifier la visibilité que pour les cases contenant des objets spéciaux
+            if case == "#":  # Mur
                 couleur = MUR
-            elif case == " ":
+            elif case == " ": # Sol
                 couleur = SOL
-            elif case == "S" and est_dans_cone((joueur_x, joueur_y), (j, i), angle_de_vue, cone_length):
-                couleur = SORTIE
-            elif case == "C" and est_dans_cone((joueur_x, joueur_y), (j, i), angle_de_vue, cone_length):
-                couleur = CLE
             else:
-                continue
+                # Vérification de la visibilité uniquement pour les objets spéciaux
+                if case == "S":  # Sortie
+                    dans_cone = est_dans_cone((joueur_x, joueur_y), (j, i), angle_de_vue, cone_length)
+                    couleur = SORTIE if dans_cone else SOL
+                elif case == "C":  # Clé
+                    dans_cone = est_dans_cone((joueur_x, joueur_y), (j, i), angle_de_vue, cone_length)
+                    couleur = CLE if dans_cone else SOL
+                elif case == "Y": # Ennemie
+                    dans_cone = est_dans_cone((joueur_x, joueur_y), (j, i), angle_de_vue, cone_length)
+                    couleur = ENNEMIES if dans_cone else SOL
+                else:
+                    couleur = NOIR
 
+            # Dessiner la case
             pygame.draw.rect(fenetre, couleur, (x, y, TAILLE_CASE, TAILLE_CASE))
 
+    # Dessiner le joueur
     joueur_ecran_x = joueur_x * TAILLE_CASE - camera_x_offset
     joueur_ecran_y = joueur_y * TAILLE_CASE - camera_y_offset
     pygame.draw.rect(fenetre, JOUEUR, (joueur_ecran_x, joueur_ecran_y, TAILLE_CASE, TAILLE_CASE))
 
-    texte = pygame.font.Font(None, 40).render(f"Clés: {cles_collectees}/{NOMBRE_CLES}", True, BLANC)
-    fenetre.blit(texte, (10, 10))
-
 # Vérification de la validité du déplacement
 def deplacement_valide(hopital, pos):
     x, y = pos
-    if 0 <= x < len(hopital[0]) and 0 <= y < len(hopital):
+    if 0 <= y < len(hopital) and 0 <= x < len(hopital[0]):
         return hopital[y][x] != "#"
     return False
 
@@ -253,40 +403,42 @@ def afficher_victoire():
 def afficher_menu():
     while True:
         fenetre.fill(NOIR)
-        
+
         # Titre
         titre = pygame.font.Font(None, 150).render("Creepy Hospital", True, BLANC)
         fenetre.blit(titre, (LARGEUR // 2 - titre.get_width() // 2, HAUTEUR - 700))
 
+        # Récupérer la position de la souris
+        souris_x, souris_y = pygame.mouse.get_pos()
+
         # Boutons
-        bouton_paramètres = pygame.Rect(LARGEUR // 2 - 150, 350, 300, 70)
-        bouton_jouer = pygame.Rect(LARGEUR // 2 - 230, 450, 460, 100)  # Bouton agrandi
-        bouton_quitter = pygame.Rect(LARGEUR // 2 - 150, 580, 300, 70)  # Bouton agrandi
+        bouton_paramètres = pygame.Rect(LARGEUR // 2 - 170, 350, 340, 70)
+        bouton_jouer = pygame.Rect(LARGEUR // 2 - 230, 440, 460, 100)
+        bouton_crédits = pygame.Rect(LARGEUR // 2 - 150, 560, 300, 70)
+        bouton_quitter = pygame.Rect(LARGEUR // 2 - 120, 650, 240, 70)
 
-        # Position de la souris
-        mouse_pos = pygame.mouse.get_pos()
+        # Liste des boutons et leurs textes
+        boutons = [
+            (bouton_paramètres, "Paramètres", 50),
+            (bouton_jouer, "Jouer", 100),
+            (bouton_crédits, "Crédits", 50),
+            (bouton_quitter, "Quitter", 50),
+        ]
 
-        # Changement de couleur si la souris survole un bouton
-        couleur_paramètres = (255, 0, 0) if bouton_paramètres.collidepoint(mouse_pos) else MUR
-        couleur_jouer = (255, 0, 0) if bouton_jouer.collidepoint(mouse_pos) else MUR
-        couleur_quitter = (255, 0, 0) if bouton_quitter.collidepoint(mouse_pos) else MUR
+        for bouton, texte, taille_texte in boutons:
+            # Vérifier si la souris est sur le bouton
+            if bouton.collidepoint(souris_x, souris_y):
+                couleur = (255, 0, 0)  # Rouge
+                bouton = bouton.inflate(20, 20)  # Agrandir légèrement le bouton
+            else:
+                couleur = BORDEAUX
 
-        # Dessin des boutons avec la bonne couleur
-        pygame.draw.rect(fenetre, couleur_paramètres, bouton_paramètres)
-        pygame.draw.rect(fenetre, couleur_jouer, bouton_jouer)
-        pygame.draw.rect(fenetre, couleur_quitter, bouton_quitter)
-
-        # Texte sur les boutons
-        texte_paramètres = pygame.font.Font(None, 50).render("Paramètres", True, BLANC)
-        texte_jouer = pygame.font.Font(None, 100).render("Jouer", True, BLANC)
-        texte_quitter = pygame.font.Font(None, 50).render("Quitter", True, BLANC)
-
-        fenetre.blit(texte_paramètres, (bouton_paramètres.centerx - texte_paramètres.get_width() // 2,
-                                        bouton_paramètres.centery - texte_paramètres.get_height() // 2))
-        fenetre.blit(texte_jouer, (bouton_jouer.centerx - texte_jouer.get_width() // 2,
-                                   bouton_jouer.centery - texte_jouer.get_height() // 2))
-        fenetre.blit(texte_quitter, (bouton_quitter.centerx - texte_quitter.get_width() // 2,
-                                     bouton_quitter.centery - texte_quitter.get_height() // 2))
+            pygame.draw.rect(fenetre, couleur, bouton)
+            texte_rendu = pygame.font.Font(None, taille_texte).render(texte, True, BLANC)
+            fenetre.blit(
+                texte_rendu,
+                (bouton.centerx - texte_rendu.get_width() // 2, bouton.centery - texte_rendu.get_height() // 2),
+            )
 
         pygame.display.flip()
 
@@ -301,45 +453,45 @@ def afficher_menu():
                     pygame.quit()
                     sys.exit()
 
+
+# Afficher le menu pause
 def afficher_menu_pause():
     while True:
         fenetre.fill(NOIR)
 
+        # Récupérer la position de la souris
+        souris_x, souris_y = pygame.mouse.get_pos()
+
         # Boutons
-        bouton_continuer = pygame.Rect(LARGEUR // 2 - 230, 240, 460, 100)
-        bouton_recommencer = pygame.Rect(LARGEUR // 2 - 200, 380, 400, 70)
-        bouton_paramètres = pygame.Rect(LARGEUR // 2 - 150, 480, 290, 70)
-        bouton_quitter = pygame.Rect(LARGEUR // 2 - 120, 580, 230, 70)
+        bouton_continuer = pygame.Rect(LARGEUR // 2 - 250, 230, 520, 100)
+        bouton_recommencer = pygame.Rect(LARGEUR // 2 - 210, 350, 440, 70)
+        bouton_paramètres = pygame.Rect(LARGEUR // 2 - 170, 440, 360, 60)
+        bouton_crédits = pygame.Rect(LARGEUR // 2 - 140, 520, 300, 70)
+        bouton_quitter = pygame.Rect(LARGEUR // 2 - 120, 610, 260, 70)
 
-        # Position de la souris
-        mouse_pos = pygame.mouse.get_pos()
+        # Liste des boutons et leurs textes
+        boutons = [
+            (bouton_continuer, "Continuer", 80),
+            (bouton_recommencer, "Recommencer", 60),
+            (bouton_paramètres, "Paramètres", 60),
+            (bouton_crédits, "Crédits", 50),
+            (bouton_quitter, "Quitter", 50),
+        ]
 
-        # Changement de couleur si la souris survole un bouton
-        couleur_continuer = (255, 0, 0) if bouton_continuer.collidepoint(mouse_pos) else MUR
-        couleur_recommencer = (255, 0, 0) if bouton_recommencer.collidepoint(mouse_pos) else MUR
-        couleur_paramètres = (255, 0, 0) if bouton_paramètres.collidepoint(mouse_pos) else MUR
-        couleur_quitter = (255, 0, 0) if bouton_quitter.collidepoint(mouse_pos) else MUR
+        for bouton, texte, taille_texte in boutons:
+            # Vérifier si la souris est sur le bouton
+            if bouton.collidepoint(souris_x, souris_y):
+                couleur = (255, 0, 0)  # Rouge
+                bouton = bouton.inflate(20, 20)  # Agrandir légèrement le bouton
+            else:
+                couleur = BORDEAUX
 
-        # Dessin des boutons avec la bonne couleur
-        pygame.draw.rect(fenetre, couleur_continuer, bouton_continuer)
-        pygame.draw.rect(fenetre, couleur_recommencer, bouton_recommencer)
-        pygame.draw.rect(fenetre, couleur_paramètres, bouton_paramètres)
-        pygame.draw.rect(fenetre, couleur_quitter, bouton_quitter)
-
-        # Texte sur les boutons
-        texte_continuer = pygame.font.Font(None, 80).render("Continuer", True, BLANC)
-        texte_recommencer = pygame.font.Font(None, 60).render("Recommencer", True, BLANC)
-        texte_paramètres = pygame.font.Font(None, 60).render("Paramètres", True, BLANC)
-        texte_quitter = pygame.font.Font(None, 50).render("Quitter", True, BLANC)
-
-        fenetre.blit(texte_continuer, (bouton_continuer.centerx - texte_continuer.get_width() // 2,
-                                       bouton_continuer.centery - texte_continuer.get_height() // 2))
-        fenetre.blit(texte_recommencer, (bouton_recommencer.centerx - texte_recommencer.get_width() // 2,
-                                         bouton_recommencer.centery - texte_recommencer.get_height() // 2))
-        fenetre.blit(texte_paramètres, (bouton_paramètres.centerx - texte_paramètres.get_width() // 2,
-                                        bouton_paramètres.centery - texte_paramètres.get_height() // 2))
-        fenetre.blit(texte_quitter, (bouton_quitter.centerx - texte_quitter.get_width() // 2,
-                                     bouton_quitter.centery - texte_quitter.get_height() // 2))
+            pygame.draw.rect(fenetre, couleur, bouton)
+            texte_rendu = pygame.font.Font(None, taille_texte).render(texte, True, BLANC)
+            fenetre.blit(
+                texte_rendu,
+                (bouton.centerx - texte_rendu.get_width() // 2, bouton.centery - texte_rendu.get_height() // 2),
+            )
 
         pygame.display.flip()
 
@@ -357,47 +509,13 @@ def afficher_menu_pause():
                     sys.exit()
 
 
-
-# Génération initiale
-NB_LIGNES = (HAUTEUR // TAILLE_CASE) * 10
-NB_COLONNES = (LARGEUR // TAILLE_CASE) * 10
+# Génération objet
 hopital = generer_hopital(NB_LIGNES, NB_COLONNES)
 cles = placer_cles(hopital, NOMBRE_CLES)
-joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
-camera_offset = [0, 0]
-
-# Vitesse de déplacement
-vitesse = 1
-compteur_deplacement = 10
-
-# Initialisation de l'angle de vue avec une valeur par défaut
-angle_de_vue = 270  # 0 = droite, 90 = bas, 180 = gauche, 270 = haut
-derniere_direction = (0, 0)  # Direction initiale (aucune touche appuyée)
-
-# Définir le rayon de la zone de vision circulaire (vous pouvez ajuster cette valeur)
-rayon_vision_circulaire = 40  # Exemple : rayon de 100 pixels
+ennemis = initialiser_ennemis(hopital, NOMBRE_ENNEMIES)
 
 # Boucle principale
-# Ajout de la gestion de l'angle de vue basé sur la position de la souris
-def calculer_angle_vue(joueur_pos, souris_pos):
-    """Calcule l'angle de vue entre le joueur et la position de la souris."""
-    joueur_x, joueur_y = joueur_pos
-    souris_x, souris_y = souris_pos
-
-    dx = souris_x - joueur_x
-    dy = souris_y - joueur_y
-    return math.degrees(math.atan2(dy, dx))
-
-# Ajout dans la boucle principale
-angle_de_vue = 0  # Initialisation de l'angle de vue
-
-# Boucle principale du jeu
-joueur_pos = (NB_COLONNES // 2, NB_LIGNES // 2)  # Position initiale du joueur
-camera_offset = (0, 0)  # Offset initial de la caméra
-cles = placer_cles(hopital, NOMBRE_CLES)  # Placement des clés
-
 afficher_menu()
-
 running = True
 while running:
     for event in pygame.event.get():
@@ -405,39 +523,50 @@ while running:
             running = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                action = afficher_menu_pause()
-                if action == "recommencer":
-                    # Réinitialisation
+                choix = afficher_menu_pause()
+                if choix == "recommencer":
                     hopital = generer_hopital(NB_LIGNES, NB_COLONNES)
                     cles = placer_cles(hopital, NOMBRE_CLES)
-                    joueur_pos = (NB_COLONNES // 2, NB_LIGNES // 2)
+                    joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
                     cles_collectees = 0
-                elif action == "continuer":
-                    continue
+                    positions_ennemies = []
 
-    # Suivi de la souris
-    souris_pos = pygame.mouse.get_pos()
-    joueur_ecran_x = joueur_pos[0] * TAILLE_CASE - camera_offset[0]
-    joueur_ecran_y = joueur_pos[1] * TAILLE_CASE - camera_offset[1]
-    angle_de_vue = calculer_angle_vue((joueur_ecran_x, joueur_ecran_y), souris_pos)
-
-    # Gestion des touches pour déplacer le joueur
+    # Obtenir la position de la souris
+    souris_x, souris_y = pygame.mouse.get_pos()
+    
+    # Calculer la position du joueur à l'écran
+    joueur_ecran_x = joueur_pos[0] * TAILLE_CASE - camera_offset[0] + TAILLE_CASE // 2
+    joueur_ecran_y = joueur_pos[1] * TAILLE_CASE - camera_offset[1] + TAILLE_CASE // 2
+    
+    # Calculer l'angle entre le joueur et la souris
+    dx = souris_x - joueur_ecran_x
+    dy = souris_y - joueur_ecran_y
+    angle_de_vue = math.degrees(math.atan2(dy, dx))
+    
     touches = pygame.key.get_pressed()
-    x, y = joueur_pos
-    if touches[pygame.K_UP] and deplacement_valide(hopital, (x, y - 1)):
-        joueur_pos = (x, y - 1)
-    if touches[pygame.K_DOWN] and deplacement_valide(hopital, (x, y + 1)):
-        joueur_pos = (x, y + 1)
-    if touches[pygame.K_LEFT] and deplacement_valide(hopital, (x - 1, y)):
-        joueur_pos = (x - 1, y)
-    if touches[pygame.K_RIGHT] and deplacement_valide(hopital, (x + 1, y)):
-        joueur_pos = (x + 1, y)
+    nouvelle_pos = joueur_pos[:]
 
-    # Mise à jour de la caméra pour centrer le joueur
-    camera_offset = (
-        joueur_pos[0] * TAILLE_CASE - LARGEUR // 2,
-        joueur_pos[1] * TAILLE_CASE - HAUTEUR // 2,
-    )
+    # Le reste du code de déplacement reste inchangé...
+    if touches[pygame.K_UP] or touches[pygame.K_z]:
+        nouvelle_pos[1] -= 1
+        derniere_direction = (0, -1)
+    elif touches[pygame.K_DOWN] or touches[pygame.K_s]:
+        nouvelle_pos[1] += 1
+        derniere_direction = (0, 1)
+    elif touches[pygame.K_LEFT] or touches[pygame.K_q]:
+        nouvelle_pos[0] -= 1
+        derniere_direction = (-1, 0)
+    elif touches[pygame.K_RIGHT] or touches[pygame.K_d]:
+        nouvelle_pos[0] += 1
+        derniere_direction = (1, 0)
+
+    # Vérifie si le déplacement est valide
+    if deplacement_valide(hopital, nouvelle_pos):
+        joueur_pos = nouvelle_pos
+
+    # Mise à jour de la caméra pour suivre le joueur
+    camera_offset[0] = joueur_pos[0] * TAILLE_CASE - LARGEUR // 2
+    camera_offset[1] = joueur_pos[1] * TAILLE_CASE - HAUTEUR // 2
 
     # Dessiner l'hôpital
     dessiner_hopital(hopital, joueur_pos, camera_offset)
@@ -454,27 +583,33 @@ while running:
         joueur_pos[0] * TAILLE_CASE - camera_offset[0] + TAILLE_CASE // 2,
         joueur_pos[1] * TAILLE_CASE - camera_offset[1] + TAILLE_CASE // 2
     )
-    dessiner_zone_vision_circulaire(fenetre, joueur_pos_pixels, rayon_vision_circulaire)
-
-    # Dessiner la zone circulaire de vision autour du joueur
-    dessiner_zone_vision_circulaire(fenetre, joueur_pos_pixels, rayon_vision_circulaire)
 
     # Collecte des clés
     if hopital[joueur_pos[1]][joueur_pos[0]] == "C":
         cles_collectees += 1
         hopital[joueur_pos[1]][joueur_pos[0]] = " "
 
+    # Déplacer les ennemis
+    deplacer_ennemis(hopital, ennemis, joueur_pos)
     
-# Victoire si le joueur atteint la sortie avec toutes les clés
+    # Vérifier les collisions avec les ennemis
+    if verifier_collision_ennemis(joueur_pos, ennemis):
+        game_over()
+        running = False
+    
+    # Dessiner les ennemis
+    for ennemi in ennemis:
+        x = ennemi.x * TAILLE_CASE - camera_offset[0]
+        y = ennemi.y * TAILLE_CASE - camera_offset[1]
+        if est_dans_cone(joueur_pos, (ennemi.x, ennemi.y), angle_de_vue, cone_length):
+            pygame.draw.rect(fenetre, ENNEMIES, (x, y, TAILLE_CASE, TAILLE_CASE))
+
+    # Victoire si le joueur atteint la sortie avec toutes les clés
     if hopital[joueur_pos[1]][joueur_pos[0]] == "S" and cles_collectees == NOMBRE_CLES:
         afficher_victoire()
         running = False
 
-    # Mise à jour graphique
-    dessiner_hopital(hopital, joueur_pos, camera_offset)
-    appliquer_masque_vision(fenetre, (joueur_ecran_x, joueur_ecran_y), angle_de_vue, cone_length)
     pygame.display.flip()
-    horloge.tick(60)
+    horloge.tick(120)
 
 pygame.quit()
-sys.exit()

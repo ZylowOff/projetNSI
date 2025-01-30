@@ -1,4 +1,3 @@
-
 import pygame
 import random
 import sys
@@ -618,9 +617,6 @@ def afficher_menu_pause():
                 (bouton.centerx - texte_rendu.get_width() // 2, bouton.centery - texte_rendu.get_height() // 2),
             )
 
-        pygame.display.flip()
-
-
         # Vérifier si la touche Échap est pressée
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -642,6 +638,8 @@ def afficher_menu_pause():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return "continuer"
+        
+        pygame.display.flip()
 
 # Placer cette fonction après les autres définitions de fonctions et avant la boucle principale
 def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):

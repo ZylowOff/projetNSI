@@ -1,3 +1,4 @@
+
 import pygame
 import random
 import sys
@@ -639,7 +640,7 @@ def afficher_menu_pause():
                 if event.key == pygame.K_ESCAPE:
                     return "continuer"
         
-        pygame.display.flip()
+    pygame.display.flip()
 
 # Placer cette fonction après les autres définitions de fonctions et avant la boucle principale
 def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):

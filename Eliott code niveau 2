@@ -1,12 +1,16 @@
 import pygame
 import random
-import math
-import sys
 
-# Constantes de base
-LARGEUR = 1500
-HAUTEUR = 900
+# Constantes
+LARGEUR = 1500 * 3+1
+HAUTEUR = 900 * 3+1
 TAILLE_CASE = 50
+
+# Paramètres
+DENSITE_BUISSONS = 0.03
+REDUCTION_VISION_BUISSON = 1
+VITESSE_NORMALE = 5
+VITESSE_BUISSON = 2
 
 # Couleurs
 NOIR = (0, 0, 0)
@@ -17,152 +21,138 @@ HERBE = (34, 139, 34)
 BUISSON = (0, 100, 0)
 CLE = (255, 223, 0)
 ENNEMIES = (255, 0, 0)
+ARBRE = (255, 105, 180)
+BARRIERE = (139, 69, 19)
 
-# Paramètres spécifiques au jardin
-DENSITE_BUISSONS = 0.2  # 20% de buissons
-REDUCTION_VISION_BUISSON = 0.5  # Réduction de 50% de la vision dans les buissons
+COULEURS = {
+    "X": BARRIERE,
+    "B": BUISSON,
+    "A": ARBRE,
+    "S": SORTIE,
+    "J": JOUEUR,
+    " ": HERBE,
+}
 
 class Jardin:
     def __init__(self):
         self.nb_lignes = HAUTEUR // TAILLE_CASE
         self.nb_colonnes = LARGEUR // TAILLE_CASE
-        self.joueur_pos = [0, 0]  # Initialiser la position avant de générer le jardin
+        self.joueur_pos = self.placer_joueur_bord()
         self.grille = self.generer_jardin()
         self.camera_offset = [0, 0]
-        self.cone_angle = 60
-        self.cone_length = 600
-        self.rayon_vision_proche = 100
-        
+        self.preparer_textures()
+
     def generer_jardin(self):
-        # Création d'une grille remplie d'herbe
         grille = [[" " for _ in range(self.nb_colonnes)] for _ in range(self.nb_lignes)]
-        
-        # Ajout aléatoire de buissons
+
         for i in range(self.nb_lignes):
-            for j in range(self.nb_colonnes):
-                if random.random() < DENSITE_BUISSONS:
-                    grille[i][j] = "B"  # B pour Buisson
-                    
-        # Placer la sortie sur le bord opposé au joueur
+            grille[i][0] = grille[i][-1] = "X"
+        for j in range(self.nb_colonnes):
+            grille[0][j] = grille[-1][j] = "X"
+
+        for _ in range(int(self.nb_lignes * self.nb_colonnes * DENSITE_BUISSONS)):
+            x, y = random.randint(1, self.nb_colonnes - 3), random.randint(1, self.nb_lignes - 3)
+            if grille[y][x] == " ":
+                for dy in range(2):
+                    for dx in range(2):
+                        grille[y + dy][x + dx] = "B"
+
+        for _ in range(random.randint(20, 60)):
+            x, y = random.randint(1, self.nb_colonnes - 2), random.randint(1, self.nb_lignes - 2)
+            if grille[y][x] == " ":
+                grille[y][x] = "A"
+                if random.random() < 0.5 and y + 1 < self.nb_lignes - 1 and x + 1 < self.nb_colonnes - 1:
+                    grille[y + 1][x] = "A"
+                    grille[y][x + 1] = "A"
+                    grille[y + 1][x + 1] = "A"
+
         self.placer_sortie(grille)
-        
         return grille
-    
+
     def placer_joueur_bord(self):
-        # Choisir un bord aléatoire (0=haut, 1=droite, 2=bas, 3=gauche)
         bord = random.randint(0, 3)
-        
-        if bord == 0:  # Haut
-            return [random.randint(1, self.nb_colonnes-2), 1]
-        elif bord == 1:  # Droite
-            return [self.nb_colonnes-2, random.randint(1, self.nb_lignes-2)]
-        elif bord == 2:  # Bas
-            return [random.randint(1, self.nb_colonnes-2), self.nb_lignes-2]
-        else:  # Gauche
-            return [1, random.randint(1, self.nb_lignes-2)]
-    
+        return [
+            random.randint(1, self.nb_colonnes - 2) if bord % 2 == 0 else (self.nb_colonnes - 2 if bord == 1 else 1),
+            random.randint(1, self.nb_lignes - 2) if bord % 2 == 1 else (self.nb_lignes - 2 if bord == 2 else 1),
+        ]
+
     def placer_sortie(self, grille):
-        # Placer la sortie sur le bord opposé au joueur
-        if self.joueur_pos[1] <= 1:  # Si joueur en haut
-            y = self.nb_lignes - 2
-            x = random.randint(1, self.nb_colonnes-2)
-        elif self.joueur_pos[0] >= self.nb_colonnes-2:  # Si joueur à droite
-            x = 1
-            y = random.randint(1, self.nb_lignes-2)
-        elif self.joueur_pos[1] >= self.nb_lignes-2:  # Si joueur en bas
-            y = 1
-            x = random.randint(1, self.nb_colonnes-2)
-        else:  # Si joueur à gauche
-            x = self.nb_colonnes-2
-            y = random.randint(1, self.nb_lignes-2)
-        
+        bord = random.choice(["haut", "bas", "gauche", "droite"])
+        x, y = (random.randint(1, self.nb_colonnes - 2), 0 if bord == "haut" else self.nb_lignes - 1) if bord in ["haut", "bas"] else (0 if bord == "gauche" else self.nb_colonnes - 1, random.randint(1, self.nb_lignes - 2))
         grille[y][x] = "S"
-    
-    def est_dans_buisson(self, pos):
-        x, y = pos
-        if 0 <= y < len(self.grille) and 0 <= x < len(self.grille[0]):
-            return self.grille[y][x] == "B"
-        return False
-    
-    def ajuster_vision(self, base_vision):
-        if self.est_dans_buisson(self.joueur_pos):
-            return base_vision * REDUCTION_VISION_BUISSON
-        return base_vision
+        if bord in ["haut", "bas"]:
+            grille[y][x - 1] = grille[y][x + 1] = "X"
+        else:
+            grille[y - 1][x] = grille[y + 1][x] = "X"
 
-    def dessiner(self, fenetre, angle_vue):
+    def est_dans_buisson(self):
+        x, y = self.joueur_pos
+        return self.grille[y][x] == "B"
+
+    def preparer_textures(self):
+        self.textures = {cle: pygame.Surface((TAILLE_CASE, TAILLE_CASE)) for cle in COULEURS}
+        for cle, couleur in COULEURS.items():
+            self.textures[cle].fill(couleur)
+
+    def dessiner(self, fenetre):
         fenetre.fill(NOIR)
-        
-        # Ajuster la vision si le joueur est dans un buisson
-        cone_length_ajuste = self.ajuster_vision(self.cone_length)
-        rayon_vision_ajuste = self.ajuster_vision(self.rayon_vision_proche)
-        
-        # Dessiner la grille de base
-        for i in range(self.nb_lignes):
-            for j in range(self.nb_colonnes):
-                x = j * TAILLE_CASE - self.camera_offset[0]
-                y = i * TAILLE_CASE - self.camera_offset[1]
-                
-                if 0 <= x < LARGEUR and 0 <= y < HAUTEUR:
-                    if self.grille[i][j] == "B":
-                        pygame.draw.rect(fenetre, BUISSON, (x, y, TAILLE_CASE, TAILLE_CASE))
-                    elif self.grille[i][j] == "S":
-                        pygame.draw.rect(fenetre, SORTIE, (x, y, TAILLE_CASE, TAILLE_CASE))
-                    else:
-                        pygame.draw.rect(fenetre, HERBE, (x, y, TAILLE_CASE, TAILLE_CASE))
-        
-        # Dessiner le joueur
-        pygame.draw.rect(fenetre, JOUEUR, (
-            self.joueur_pos[0] * TAILLE_CASE - self.camera_offset[0],
-            self.joueur_pos[1] * TAILLE_CASE - self.camera_offset[1],
-            TAILLE_CASE, TAILLE_CASE
-        ))
 
-# Code pour tester le niveau indépendamment
+        debut_x, debut_y = self.camera_offset[0] // TAILLE_CASE, self.camera_offset[1] // TAILLE_CASE
+        fin_x, fin_y = debut_x + 30, debut_y + 18
+
+        for i in range(debut_y, min(fin_y, self.nb_lignes)):
+            for j in range(debut_x, min(fin_x, self.nb_colonnes)):
+                x, y = j * TAILLE_CASE - self.camera_offset[0], i * TAILLE_CASE - self.camera_offset[1]
+                fenetre.blit(self.textures[self.grille[i][j]], (x, y))
+
+        if self.est_dans_buisson():
+            masque = pygame.Surface((1500, 900), pygame.SRCALPHA)
+            masque.fill((0, 0, 0, int(255 * REDUCTION_VISION_BUISSON)))
+            fenetre.blit(masque, (0, 0))
+
+        joueur_x, joueur_y = self.joueur_pos[0] * TAILLE_CASE - self.camera_offset[0], self.joueur_pos[1] * TAILLE_CASE - self.camera_offset[1]
+        pygame.draw.rect(fenetre, COULEURS["J"], (joueur_x, joueur_y, TAILLE_CASE, TAILLE_CASE))
+
+
 if __name__ == "__main__":
     pygame.init()
-    fenetre = pygame.display.set_mode((LARGEUR, HAUTEUR))
+    fenetre = pygame.display.set_mode((1500, 900))
     pygame.display.set_caption("Jardin")
     horloge = pygame.time.Clock()
-    
+
     jardin = Jardin()
-    angle_vue = 0
-    
+    vitesse = VITESSE_NORMALE
+
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-                
-        # Mise à jour de l'angle de vue avec la position de la souris
-        souris_x, souris_y = pygame.mouse.get_pos()
-        joueur_ecran_x = jardin.joueur_pos[0] * TAILLE_CASE - jardin.camera_offset[0] + TAILLE_CASE // 2
-        joueur_ecran_y = jardin.joueur_pos[1] * TAILLE_CASE - jardin.camera_offset[1] + TAILLE_CASE // 2
-        angle_vue = math.degrees(math.atan2(souris_y - joueur_ecran_y, souris_x - joueur_ecran_x))
-        
-        # Déplacement du joueur
+
+        vitesse = VITESSE_BUISSON if jardin.est_dans_buisson() else VITESSE_NORMALE
         touches = pygame.key.get_pressed()
-        nouvelle_pos = jardin.joueur_pos[:]
-        
+        dx, dy = 0, 0
+
         if touches[pygame.K_z] or touches[pygame.K_UP]:
-            nouvelle_pos[1] -= 1
+            dy = -1
         if touches[pygame.K_s] or touches[pygame.K_DOWN]:
-            nouvelle_pos[1] += 1
+            dy = 1
         if touches[pygame.K_q] or touches[pygame.K_LEFT]:
-            nouvelle_pos[0] -= 1
+            dx = -1
         if touches[pygame.K_d] or touches[pygame.K_RIGHT]:
-            nouvelle_pos[0] += 1
-            
-        # Vérifier si le déplacement est valide
-        if 0 <= nouvelle_pos[0] < jardin.nb_colonnes and 0 <= nouvelle_pos[1] < jardin.nb_lignes:
+            dx = 1
+
+        nouvelle_pos = [jardin.joueur_pos[0] + dx, jardin.joueur_pos[1] + dy]
+        if jardin.grille[nouvelle_pos[1]][nouvelle_pos[0]] not in ["X", "A"]:
             jardin.joueur_pos = nouvelle_pos
-            
-        # Mise à jour de la caméra
-        jardin.camera_offset[0] = jardin.joueur_pos[0] * TAILLE_CASE - LARGEUR // 2
-        jardin.camera_offset[1] = jardin.joueur_pos[1] * TAILLE_CASE - HAUTEUR // 2
-        
-        # Dessiner
-        jardin.dessiner(fenetre, angle_vue)
+
+        jardin.camera_offset = [
+            max(0, min(jardin.joueur_pos[0] * TAILLE_CASE - 750, LARGEUR - 1500)),
+            max(0, min(jardin.joueur_pos[1] * TAILLE_CASE - 450, HAUTEUR - 900)),
+        ]
+
+        jardin.dessiner(fenetre)
         pygame.display.flip()
         horloge.tick(60)
-        
+
     pygame.quit()

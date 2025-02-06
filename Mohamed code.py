@@ -75,6 +75,8 @@ index_case_selectionnee = 0
 REsolUTIONS = [(800, 600), (1024, 768), (1280, 720), (1920, 1080)]
 resolution_index = 0  # Index de la résolution sélectionnée
 
+# Add near the top of the file with other constants
+CURSOR_SIZE = 5  # Size of the custom cursor
 
 class Ennemi:
     def __init__(self, x, y):
@@ -604,6 +606,7 @@ def bords_arrondis(surface, color, rect, radius):
 
 
 def afficher_menu():
+    pygame.mouse.set_visible(True)  # Show cursor in main menu
     musique_menu()  # Commencer la musique du menu
     # Charger l'image de fond
     background = pygame.image.load("./assets/background/forest.png")
@@ -680,6 +683,7 @@ def afficher_menu():
 
 # Afficher le menu pause
 def afficher_menu_pause():
+    pygame.mouse.set_visible(True)  # Show cursor in pause menu
     global resolution_index, largeur, hauteur, fenetre
     while True:
         fenetre.fill(noir)
@@ -694,6 +698,7 @@ def afficher_menu_pause():
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if bouton_continuer.collidepoint(event.pos):
+                    pygame.mouse.set_visible(False)  # Hide cursor when returning to game
                     return "continuer"
                 if bouton_recommencer.collidepoint(event.pos):
                     return "recommencer"
@@ -707,6 +712,7 @@ def afficher_menu_pause():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
+                    pygame.mouse.set_visible(False)  # Hide cursor when returning to game
                     return "continuer"
 
         # Boutons
@@ -880,6 +886,7 @@ ennemis = initialiser_ennemis(hopital, nombre_ennemis)
 
 # Boucle principale
 afficher_menu()
+pygame.mouse.set_visible(False)  # Hide cursor during gameplay
 musique_fond()  # Start game music
 running = True
 while running:
@@ -924,7 +931,7 @@ while running:
     # Calculer l'angle entre le joueur et la souris
     dx = souris_x - joueur_ecran_x
     dy = souris_y - joueur_ecran_y
-    angle_de_vue = math.degrees(math.atan2(dy, dx))
+    angle_de_vue = math.degrees(math.atan2(dy, dx))  # Direct angle calculation without smoothing
 
     touches = pygame.key.get_pressed()
     nouvelle_pos = joueur_pos[:]
@@ -1012,6 +1019,21 @@ while running:
 
     # Dessiner le compteur de clés après avoir dessiné tout le reste
     dessiner_compteur_cles(fenetre, cles_collectees, nombre_cles)
+
+    # Draw custom cursor (small cross)
+    if not pygame.mouse.get_visible():  # Only draw custom cursor when default is hidden
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        # Vertical line
+        pygame.draw.line(fenetre, blanc, 
+                        (mouse_x, mouse_y - CURSOR_SIZE), 
+                        (mouse_x, mouse_y + CURSOR_SIZE))
+        # Horizontal line
+        pygame.draw.line(fenetre, blanc, 
+                        (mouse_x - CURSOR_SIZE, mouse_y), 
+                        (mouse_x + CURSOR_SIZE, mouse_y))
+        
+        # Optional: Add a dot in the center
+        pygame.draw.circle(fenetre, blanc, (mouse_x, mouse_y), 1)
 
     pygame.display.flip()
     horloge.tick(60)  # Limiter à 60 FPS

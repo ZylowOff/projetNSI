@@ -7,47 +7,47 @@ import math
 pygame.init()
 
 # Dimensions de la fenêtre
-LARGEUR = 1920  # Largeur de la fenêtre
-HAUTEUR = 1080   # Hauteur de la fenêtre
-TAILLE_CASE = 50  # Taille d'une case dans le labyrinthe
+largeur = 1920  # Largeur de la fenêtre
+hauteur = 1080   # Hauteur de la fenêtre
+taille_case = 50  # Taille d'une case dans le labyrinthe
 
 # Couleurs utilisées dans le jeu
-NOIR = (0, 0, 0)
-BLANC = (255, 255, 255)
-GRIS = (200, 200, 200)
-JOUEUR = (41, 27, 14)
-SORTIE = (0, 255, 0)
-MUR = (100, 40, 30)
-SOL = (115, 109, 115)
-CLE = (255, 223, 0)
-ENNEMIES = (255, 0, 0)
-BORDEAUX = (40, 0, 0)
+noir = (0, 0, 0)
+blanc = (255, 255, 255)
+gris = (200, 200, 200)
+joueur = (41, 27, 14)
+sortie = (0, 255, 0)
+mur = (100, 40, 30)
+sol = (115, 109, 115)
+cle = (255, 223, 0)
+ennemis = (255, 0, 0)
+bordeaux = (40, 0, 0)
 
 # Création de la fenêtre principale
-fenetre = pygame.display.set_mode((LARGEUR, HAUTEUR), pygame.FULLSCREEN)
+fenetre = pygame.display.set_mode((largeur, hauteur), pygame.FULLSCREEN)
 pygame.display.set_caption("Echoes of the Hollow")
 
 # Horloge pour contrôler les FPS
 horloge = pygame.time.Clock()
 
 # Paramètres de jeu
-NOMBRE_CLES = 3  # Nombre de clés à collecter pour gagner
+nombre_cles = 3  # Nombre de clés à collecter pour gagner
 cles_collectees = 0  # Compteur de clés collectées
-NOMBRE_ENNEMIES = 3
-VITESSE_ENNEMIE = 0.4  # Augmentation de la vitesse des ennemis
+nombre_ennemis = 3
+vitesse_ennemis = 0.4  # Augmentation de la vitesse des ennemis
 
 # Paramètres de la vision
 cone_angle = 60  # Angle du cône de vision en degrés
-cone_length = 600  # Augmentation de la longueur du cône de vision (était 375)
+cone_longueur = 600  # Augmentation de la longueur du cône de vision (était 375)
 
 # Ajouter cette constante avec les autres paramètres de vision
-RAYON_VISION_PROCHE = 100  # Rayon du cercle de vision autour du joueur
+rayon_vision_proche = 100  # Rayon du cercle de vision autour du joueur
 
 # Génération initiale
-NB_LIGNES = (HAUTEUR // TAILLE_CASE) * 8
-NB_COLONNES = (LARGEUR // TAILLE_CASE) * 8
-print("NB_LIGNES :", NB_LIGNES, "NB_COLONNES :", NB_COLONNES)  # Vérification
-joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
+nombre_lignes = (hauteur // taille_case) * 8
+nombre_colonnes = (largeur // taille_case) * 8
+print("Nombre de lignes :", nombre_lignes, "Nombre de colonnes :", nombre_colonnes)  # Vérification
+joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
 camera_offset = [0, 0]
 
 # Initialisation de l'angle de vue avec une valeur par défaut
@@ -58,11 +58,11 @@ derniere_direction = (0, 0)  # Direction initiale (aucune touche appuyée)
 ennemis = []  # Liste qui contiendra des dictionnaires pour chaque ennemi
 
 # Ajouter ces variables après les autres paramètres du jeu
-DELAI_MOUVEMENT = 35  # Délai en millisecondes entre chaque mouvement
+delai_mouvement = 35  # Délai en millisecondes entre chaque mouvement
 dernier_mouvement = 0  # Pour suivre le temps du dernier mouvement
 
 # Optimisation des constantes globales
-TAILLE_CACHE = 100  # Taille du cache pour les calculs trigonométriques
+taille_cache = 100  # Taille du cache pour les calculs trigonométriques
 cos_cache = {i: math.cos(math.radians(i)) for i in range(360)}
 sin_cache = {i: math.sin(math.radians(i)) for i in range(360)}
 
@@ -70,7 +70,7 @@ sin_cache = {i: math.sin(math.radians(i)) for i in range(360)}
 index_case_selectionnee = 0
 
 # Ajouter ces variables pour les résolutions
-RESOLUTIONS = [(800, 600), (1024, 768), (1280, 720), (1920, 1080)]
+REsolUTIONS = [(800, 600), (1024, 768), (1280, 720), (1920, 1080)]
 resolution_index = 0  # Index de la résolution sélectionnée
 
 
@@ -82,8 +82,8 @@ class Ennemi:
         self.compteur_deplacement = 0
         self.cone_vision = 8
         self.angle_vision = 120
-        self.vitesse_normale = VITESSE_ENNEMIE
-        self.vitesse_lente = VITESSE_ENNEMIE * 0.3
+        self.vitesse_normale = vitesse_ennemis
+        self.vitesse_lente = vitesse_ennemis * 0.3
         self.vitesse_actuelle = self.vitesse_lente
         # Nouvelles variables pour la mémoire
         self.derniere_pos_joueur = None
@@ -194,8 +194,8 @@ def deplacer_ennemis(hopital, ennemis, joueur_pos):
 
 def dessiner_vision_ennemis(surface, ennemi, camera_offset):
     # Dessiner le cône de vision des ennemis (pour le débogage)
-    x = ennemi.x * TAILLE_CASE - camera_offset[0] + TAILLE_CASE // 2
-    y = ennemi.y * TAILLE_CASE - camera_offset[1] + TAILLE_CASE // 2
+    x = ennemi.x * taille_case - camera_offset[0] + taille_case // 2
+    y = ennemi.y * taille_case - camera_offset[1] + taille_case // 2
 
     # Déterminer l'angle de base selon la direction
     angle_base = 0
@@ -215,12 +215,12 @@ def dessiner_vision_ennemis(surface, ennemi, camera_offset):
     steps = 20
     for i in range(steps + 1):
         theta = start_angle + (end_angle - start_angle) * i / steps
-        px = x + math.cos(theta) * ennemi.cone_vision * TAILLE_CASE / 10
-        py = y + math.sin(theta) * ennemi.cone_vision * TAILLE_CASE / 10
+        px = x + math.cos(theta) * ennemi.cone_vision * taille_case / 10
+        py = y + math.sin(theta) * ennemi.cone_vision * taille_case / 10
         points.append((px, py))
 
     # Dessiner le cône de vision en semi-transparent
-    s = pygame.Surface((LARGEUR, HAUTEUR), pygame.SRCALPHA)
+    s = pygame.Surface((largeur, hauteur), pygame.SRCALPHA)
     pygame.draw.polygon(s, (255, 0, 0, 30), points)
     surface.blit(s, (0, 0))
 
@@ -236,9 +236,9 @@ def verifier_collision_ennemis(joueur_pos, ennemis):
 def game_over():
     arreter_musique()  # Stop current music
     musique_menu()  # Start menu music
-    fenetre.fill(NOIR)
-    texte = pygame.font.Font(None, 60).render("Game Over!", True, BLANC)
-    texte_rect = texte.get_rect(center=(LARGEUR // 2, HAUTEUR // 2))
+    fenetre.fill(noir)
+    texte = pygame.font.Font(None, 60).render("Game Over!", True, blanc)
+    texte_rect = texte.get_rect(center=(largeur // 2, hauteur // 2))
     fenetre.blit(texte, texte_rect)
     pygame.display.flip()
     pygame.time.delay(2000)  # Attendre 2 secondes
@@ -255,11 +255,11 @@ def dessiner_vision_cone(surface, position, angle, length):
         theta = start_angle + i * (end_angle - start_angle) / steps
         points.append((x + length * math.cos(theta),
                       y + length * math.sin(theta)))
-    pygame.draw.polygon(surface, BLANC, points)
+    pygame.draw.polygon(surface, blanc, points)
 
 
 def appliquer_masque_vision(surface, position, angle, length):
-    masque = pygame.Surface((LARGEUR, HAUTEUR), pygame.SRCALPHA)
+    masque = pygame.Surface((largeur, hauteur), pygame.SRCALPHA)
     masque.fill((0, 0, 0, 200))  # Masque noir semi-transparent
 
     x, y = position
@@ -280,8 +280,8 @@ def appliquer_masque_vision(surface, position, angle, length):
             ray_y = y + dist * math.sin(theta)
 
             # Convertir en coordonnées de grille
-            grille_x = int((ray_x + camera_offset[0]) / TAILLE_CASE)
-            grille_y = int((ray_y + camera_offset[1]) / TAILLE_CASE)
+            grille_x = int((ray_x + camera_offset[0]) / taille_case)
+            grille_y = int((ray_y + camera_offset[1]) / taille_case)
 
             # Vérifier si on touche un mur
             if (0 <= grille_y < len(hopital) and
@@ -298,7 +298,7 @@ def appliquer_masque_vision(surface, position, angle, length):
 
     # Ajouter le cercle de vision proche
     pygame.draw.circle(masque, (0, 0, 0, 0),
-                       (int(x), int(y)), RAYON_VISION_PROCHE)
+                       (int(x), int(y)), rayon_vision_proche)
 
     # Appliquer le masque sur l'écran
     surface.blit(masque, (0, 0))
@@ -366,11 +366,11 @@ def placer_cles(hopital, nombre_cles):
     return cles
 
 
-def placer_ennemies(hopital, NOMBRE_ENNEMIES):
+def placer_ennemies(hopital, nombre_ennemis):
     ennemies = []
     case_vide = [(i, j) for i, ligne in enumerate(hopital)
                  for j, case in enumerate(ligne) if case == " "]
-    for j in range(NOMBRE_ENNEMIES):
+    for j in range(nombre_ennemis):
         x, y = random.choice(case_vide)
         ennemies.append((x, y))
         hopital[x][y] = "Y"  # Ajoute un ennemie à cet emplacement
@@ -384,7 +384,7 @@ def est_dans_cone(joueur_pos, case_pos, angle, length):
     dy = case_pos[1] - joueur_pos[1]
     distance = dx*dx + dy*dy  # Pas besoin de sqrt pour la comparaison
 
-    if distance > (length/TAILLE_CASE) * (length/TAILLE_CASE):
+    if distance > (length/taille_case) * (length/taille_case):
         return False
 
     angle = angle % 360
@@ -405,12 +405,12 @@ def est_visible(joueur_pos, case_pos, hopital):
     distance = math.sqrt(dx*dx + dy*dy)
 
     # Vérifier si la case est dans le cercle de vision proche
-    if distance * TAILLE_CASE <= RAYON_VISION_PROCHE:
+    if distance * taille_case <= rayon_vision_proche:
         # Vérifier s'il n'y a pas de mur entre
         return not a_mur_entre(joueur_pos, case_pos, hopital)
 
     # Sinon, vérifier si c'est dans le cône de vision
-    if not est_dans_cone(joueur_pos, case_pos, angle_de_vue, cone_length):
+    if not est_dans_cone(joueur_pos, case_pos, angle_de_vue, cone_longueur):
         return False
 
     # Vérifier s'il n'y a pas de mur entre
@@ -454,60 +454,60 @@ def a_mur_entre(joueur_pos, case_pos, hopital):
 
 def dessiner_hopital(hopital, joueur_pos, camera_offset):
     """Version optimisée du rendu"""
-    fenetre.fill(NOIR)
+    fenetre.fill(noir)
 
     # Calculer les limites visibles avec une marge
     marge = 2
-    debut_x = max(0, int(camera_offset[0] // TAILLE_CASE) - marge)
-    debut_y = max(0, int(camera_offset[1] // TAILLE_CASE) - marge)
+    debut_x = max(0, int(camera_offset[0] // taille_case) - marge)
+    debut_y = max(0, int(camera_offset[1] // taille_case) - marge)
     fin_x = min(len(hopital[0]), int(
-        (camera_offset[0] + LARGEUR) // TAILLE_CASE) + marge)
+        (camera_offset[0] + largeur) // taille_case) + marge)
     fin_y = min(len(hopital), int(
-        (camera_offset[1] + HAUTEUR) // TAILLE_CASE) + marge)
+        (camera_offset[1] + hauteur) // taille_case) + marge)
 
     # Pré-calculer les offsets de caméra
     cam_x = camera_offset[0]
     cam_y = camera_offset[1]
 
     # Surface temporaire pour le rendu de base
-    temp_surface = pygame.Surface((LARGEUR, HAUTEUR))
-    temp_surface.fill(NOIR)
+    temp_surface = pygame.Surface((largeur, hauteur))
+    temp_surface.fill(noir)
 
     # Rendu de base (murs et sol)
     for i in range(debut_y, fin_y):
-        y = i * TAILLE_CASE - cam_y
+        y = i * taille_case - cam_y
         for j in range(debut_x, fin_x):
-            x = j * TAILLE_CASE - cam_x
-            couleur = MUR if hopital[i][j] == "#" else SOL
+            x = j * taille_case - cam_x
+            couleur = mur if hopital[i][j] == "#" else sol
             pygame.draw.rect(temp_surface, couleur,
-                             (x, y, TAILLE_CASE, TAILLE_CASE))
+                             (x, y, taille_case, taille_case))
 
     fenetre.blit(temp_surface, (0, 0))
 
     # Appliquer le masque de vision
     joueur_centre = (
-        joueur_pos[0] * TAILLE_CASE - cam_x + TAILLE_CASE // 2,
-        joueur_pos[1] * TAILLE_CASE - cam_y + TAILLE_CASE // 2
+        joueur_pos[0] * taille_case - cam_x + taille_case // 2,
+        joueur_pos[1] * taille_case - cam_y + taille_case // 2
     )
-    appliquer_masque_vision(fenetre, joueur_centre, angle_de_vue, cone_length)
+    appliquer_masque_vision(fenetre, joueur_centre, angle_de_vue, cone_longueur)
 
     # Rendu des objets spéciaux
     for i in range(debut_y, fin_y):
-        y = i * TAILLE_CASE - cam_y
+        y = i * taille_case - cam_y
         for j in range(debut_x, fin_x):
             case = hopital[i][j]
             if case in ["S", "C"]:  # Exclure "Y" car les ennemis sont gérés séparément
                 if est_visible(joueur_pos, (j, i), hopital):
-                    x = j * TAILLE_CASE - cam_x
-                    couleur = SORTIE if case == "S" else CLE
+                    x = j * taille_case - cam_x
+                    couleur = sortie if case == "S" else cle
                     pygame.draw.rect(fenetre, couleur,
-                                     (x, y, TAILLE_CASE, TAILLE_CASE))
+                                     (x, y, taille_case, taille_case))
 
     # Dessiner le joueur
-    pygame.draw.rect(fenetre, JOUEUR, (
-        joueur_pos[0] * TAILLE_CASE - cam_x,
-        joueur_pos[1] * TAILLE_CASE - cam_y,
-        TAILLE_CASE, TAILLE_CASE
+    pygame.draw.rect(fenetre, joueur, (
+        joueur_pos[0] * taille_case - cam_x,
+        joueur_pos[1] * taille_case - cam_y,
+        taille_case, taille_case
     ))
 
 # Vérification de la validité du déplacement
@@ -524,9 +524,9 @@ def deplacement_valide(hopital, pos):
 
 def afficher_victoire():
     arreter_musique()  # Stop game music
-    fenetre.fill(NOIR)
-    texte = pygame.font.Font(None, 60).render("Victoire !", True, BLANC)
-    texte_rect = texte.get_rect(center=(LARGEUR // 2, HAUTEUR // 2))
+    fenetre.fill(noir)
+    texte = pygame.font.Font(None, 60).render("Victoire !", True, blanc)
+    texte_rect = texte.get_rect(center=(largeur // 2, hauteur // 2))
     fenetre.blit(texte, texte_rect)
     pygame.display.flip()
     pygame.time.delay(3000)
@@ -534,7 +534,7 @@ def afficher_victoire():
 
 def afficher_credits():
     while True:
-        fenetre.fill(NOIR)
+        fenetre.fill(noir)
 
         # Afficher les noms en colonne avec une taille de police plus grande
         noms = [
@@ -548,10 +548,10 @@ def afficher_credits():
         for i, nom in enumerate(noms):
             # Taille de police augmentée
             texte = pygame.font.Font(
-                "./assets/font/HelpMe.ttf", 80).render(nom, True, BLANC)
+                "./assets/font/HelpMe.ttf", 80).render(nom, True, blanc)
             # Ajustement de la position
             texte_rect = texte.get_rect(
-                center=(LARGEUR // 2, HAUTEUR // 2 - 50 + i * 90))
+                center=(largeur // 2, hauteur // 2 - 50 + i * 90))
             fenetre.blit(texte, texte_rect)
 
         # Vérifier les événements
@@ -566,11 +566,11 @@ def afficher_credits():
         pygame.display.flip()
 
 
-def draw_rounded_rect(surface, color, rect, radius):
+def bords_arrondis(surface, color, rect, radius):
     """Draw a rectangle with rounded corners"""
     x, y, width, height = rect
 
-    # Drawing filled circles for corners
+    # Dessiner des cercles remplis pour les coins
     pygame.draw.circle(surface, color, (x + radius, y + radius), radius)
     pygame.draw.circle(
         surface, color, (x + width - radius, y + radius), radius)
@@ -579,43 +579,39 @@ def draw_rounded_rect(surface, color, rect, radius):
     pygame.draw.circle(surface, color, (x + width - radius,
                        y + height - radius), radius)
 
-    # Drawing rectangles to fill
+    # Dessiner des rectangles pour remplir la surface
     pygame.draw.rect(surface, color, (x + radius, y, width - 2*radius, height))
     pygame.draw.rect(surface, color, (x, y + radius, width, height - 2*radius))
 
 
 def afficher_menu():
-    musique_menu()  # Start menu music
-    # Load the background image
-    try:
-        background = pygame.image.load("./assets/background/forest.png")
-        # Scale the background to fit the window
-        background = pygame.transform.scale(background, (LARGEUR, HAUTEUR))
-    except pygame.error:
-        print("Warning: Could not load background image")
-        background = None
+    musique_menu()  # Commencer la musique du menu
+    # Charger l'image de fond
+    background = pygame.image.load("./assets/background/forest.png")
+    # Ajuster la taille de l'image pour faire la taille de la fenetre
+    background = pygame.transform.scale(background, (largeur, hauteur))
 
     while True:
         # Draw background if available, otherwise fill with black
         if background:
             fenetre.blit(background, (0, 0))
         else:
-            fenetre.fill(NOIR)
+            fenetre.fill(noir)
 
         # Titre
         titre = pygame.font.Font(
-            "./assets/font/November.ttf", 150).render("Echoes of the Hollow", True, BLANC)
+            "./assets/font/November.ttf", 150).render("Echoes of the Hollow", True, blanc)
         fenetre.blit(
-            titre, (LARGEUR // 2 - titre.get_width() // 2, HAUTEUR - 900))
+            titre, (largeur // 2 - titre.get_width() // 2, hauteur - 900))
 
         # Récupérer la position de la souris
         souris_x, souris_y = pygame.mouse.get_pos()
 
         # Boutons avec leurs dimensions
-        bouton_jouer = pygame.Rect(LARGEUR // 2 - 200, 530, 400, 80)
-        bouton_parametres = pygame.Rect(LARGEUR // 2 - 200, 630, 400, 80)
-        bouton_crédits = pygame.Rect(LARGEUR // 2 - 200, 730, 400, 80)
-        bouton_quitter = pygame.Rect(LARGEUR // 2 - 200, 830, 400, 80)
+        bouton_jouer = pygame.Rect(largeur // 2 - 200, 530, 400, 80)
+        bouton_parametres = pygame.Rect(largeur // 2 - 200, 630, 400, 80)
+        bouton_crédits = pygame.Rect(largeur // 2 - 200, 730, 400, 80)
+        bouton_quitter = pygame.Rect(largeur // 2 - 200, 830, 400, 80)
 
         # Liste des boutons et leurs textes
         boutons = [
@@ -632,14 +628,14 @@ def afficher_menu():
                 # Agrandir légèrement le bouton
                 bouton = bouton.inflate(20, 20)
             else:
-                couleur = BORDEAUX
+                couleur = bordeaux
 
             # Dessiner le bouton arrondi
             # 15 est le rayon de courbure
-            draw_rounded_rect(fenetre, couleur, bouton, 15)
+            bords_arrondis(fenetre, couleur, bouton, 15)
 
             texte_rendu = pygame.font.Font(
-                "./assets/font/HelpMe.ttf", 35).render(texte, True, BLANC)
+                "./assets/font/HelpMe.ttf", 35).render(texte, True, blanc)
             fenetre.blit(
                 texte_rendu,
                 (bouton.centerx - texte_rendu.get_width() // 2,
@@ -664,12 +660,10 @@ def afficher_menu():
                     sys.exit()
 
 # Afficher le menu pause
-
-
 def afficher_menu_pause():
-    global resolution_index, LARGEUR, HAUTEUR, fenetre
+    global resolution_index, largeur, hauteur, fenetre
     while True:
-        fenetre.fill(NOIR)
+        fenetre.fill(noir)
 
         # Récupérer la position de la souris
         souris_x, souris_y = pygame.mouse.get_pos()
@@ -697,11 +691,11 @@ def afficher_menu_pause():
                     return "continuer"
 
         # Boutons
-        bouton_continuer = pygame.Rect(LARGEUR // 2 - 250, 230, 520, 100)
-        bouton_recommencer = pygame.Rect(LARGEUR // 2 - 210, 350, 440, 70)
-        bouton_parametres = pygame.Rect(LARGEUR // 2 - 170, 440, 360, 60)
-        bouton_menu_principal = pygame.Rect(LARGEUR // 2 - 140, 520, 300, 70)
-        bouton_quitter = pygame.Rect(LARGEUR // 2 - 120, 610, 260, 70)
+        bouton_continuer = pygame.Rect(largeur // 2 - 250, 230, 520, 100)
+        bouton_recommencer = pygame.Rect(largeur // 2 - 210, 350, 440, 70)
+        bouton_parametres = pygame.Rect(largeur // 2 - 170, 440, 360, 60)
+        bouton_menu_principal = pygame.Rect(largeur // 2 - 140, 520, 300, 70)
+        bouton_quitter = pygame.Rect(largeur // 2 - 120, 610, 260, 70)
 
         # Liste des boutons et leurs textes
         boutons = [
@@ -719,11 +713,11 @@ def afficher_menu_pause():
                 # Agrandir légèrement le bouton
                 bouton = bouton.inflate(20, 20)
             else:
-                couleur = BORDEAUX
+                couleur = bordeaux
 
             pygame.draw.rect(fenetre, couleur, bouton)
             texte_rendu = pygame.font.Font(
-                "./assets/font/HelpMe.ttf", taille_texte).render(texte, True, BLANC)
+                "./assets/font/HelpMe.ttf", taille_texte).render(texte, True, blanc)
             fenetre.blit(
                 texte_rendu,
                 (bouton.centerx - texte_rendu.get_width() // 2,
@@ -743,29 +737,29 @@ def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
 
     # Dessiner le fond du compteur
     fond_rect = pygame.Rect(
-        LARGEUR - (marge + taille_icone + 80),
+        largeur - (marge + taille_icone + 80),
         marge,
         taille_icone + 80,
         taille_icone + 10
     )
-    pygame.draw.rect(surface, BORDEAUX, fond_rect)
-    pygame.draw.rect(surface, BLANC, fond_rect, 2)  # Bordure blanche
+    pygame.draw.rect(surface, bordeaux, fond_rect)
+    pygame.draw.rect(surface, blanc, fond_rect, 2)  # Bordure blanche
 
     # Dessiner l'icône de clé
     icone_cle = pygame.Rect(
-        LARGEUR - (marge + taille_icone),
+        largeur - (marge + taille_icone),
         marge + 5,
         taille_icone,
         taille_icone
     )
-    pygame.draw.rect(surface, CLE, icone_cle)
+    pygame.draw.rect(surface, cle, icone_cle)
 
     # Afficher le texte du compteur
     texte = f"{cles_collectees}/{nombre_cles_total}"
     police = pygame.font.Font(None, 36)
-    surface_texte = police.render(texte, True, BLANC)
+    surface_texte = police.render(texte, True, blanc)
     pos_texte = (
-        LARGEUR - (marge + taille_icone + espacement +
+        largeur - (marge + taille_icone + espacement +
                    surface_texte.get_width()),
         marge + 8
     )
@@ -777,7 +771,7 @@ def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
 def dessiner_inventaire(surface):
     # Position et taille de l'inventaire
     inventaire_x = 30
-    inventaire_y = HAUTEUR - 70
+    inventaire_y = hauteur - 70
     case_taille = 50
     espacement = 10
     nombre_cases = 5  # Nombre total de cases dans l'inventaire
@@ -792,30 +786,30 @@ def dessiner_inventaire(surface):
             # Case sélectionnée en gris
             pygame.draw.rect(surface, (100, 100, 100), rect)
             # Bordure blanche plus épaisse
-            pygame.draw.rect(surface, BLANC, rect, 3)
+            pygame.draw.rect(surface, blanc, rect, 3)
         else:
             # Cases non sélectionnées en gris foncé
             pygame.draw.rect(surface, (50, 50, 50), rect)
-            pygame.draw.rect(surface, GRIS, rect, 1)  # Bordure grise fine
+            pygame.draw.rect(surface, gris, rect, 1)  # Bordure grise fine
 
 
 def afficher_parametres():
-    global resolution_index, LARGEUR, HAUTEUR, fenetre
+    global resolution_index, largeur, hauteur, fenetre
     while True:
-        fenetre.fill(NOIR)
+        fenetre.fill(noir)
 
         # Titre des paramètres
-        titre = pygame.font.Font(None, 60).render("Paramètres", True, BLANC)
-        fenetre.blit(titre, (LARGEUR // 2 - titre.get_width() // 2, 50))
+        titre = pygame.font.Font(None, 60).render("Paramètres", True, blanc)
+        fenetre.blit(titre, (largeur // 2 - titre.get_width() // 2, 50))
 
         # Afficher les résolutions disponibles
-        for i, (largeur, hauteur) in enumerate(RESOLUTIONS):
+        for i, (largeur, hauteur) in enumerate(REsolUTIONS):
             resolution_texte = f"{largeur} x {hauteur}"
             # Mettre en surbrillance la résolution sélectionnée
-            couleur = BLANC if i == resolution_index else GRIS
+            couleur = blanc if i == resolution_index else gris
             texte = pygame.font.Font(None, 40).render(
                 resolution_texte, True, couleur)
-            fenetre.blit(texte, (LARGEUR // 2 - texte.get_width() //
+            fenetre.blit(texte, (largeur // 2 - texte.get_width() //
                          2, 150 + i * 50))  # Espacement vertical
 
         # Vérifier les événements
@@ -829,15 +823,15 @@ def afficher_parametres():
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 # Vérifier si la souris est sur une résolution
-                for i in range(len(RESOLUTIONS)):
-                    if (LARGEUR // 2 - 100 < pygame.mouse.get_pos()[0] < LARGEUR // 2 + 100 and
+                for i in range(len(REsolUTIONS)):
+                    if (largeur // 2 - 100 < pygame.mouse.get_pos()[0] < largeur // 2 + 100 and
                             150 + i * 50 < pygame.mouse.get_pos()[1] < 150 + (i + 1) * 50):
                         resolution_index = i
                         # Mettre à jour la taille de la fenêtre
-                        LARGEUR, HAUTEUR = RESOLUTIONS[resolution_index]
+                        largeur, hauteur = REsolUTIONS[resolution_index]
                         fenetre = pygame.display.set_mode(
                             # Changer la résolution
-                            (LARGEUR, HAUTEUR), pygame.RESIZABLE)
+                            (largeur, hauteur), pygame.RESIZABLE)
 
         pygame.display.flip()
 
@@ -861,9 +855,9 @@ def arreter_musique():
 
 
 # Génération objet
-hopital = generer_hopital(NB_LIGNES, NB_COLONNES)
-cles = placer_cles(hopital, NOMBRE_CLES)
-ennemis = initialiser_ennemis(hopital, NOMBRE_ENNEMIES)
+hopital = generer_hopital(nombre_lignes, nombre_colonnes)
+cles = placer_cles(hopital, nombre_cles)
+ennemis = initialiser_ennemis(hopital, nombre_ennemis)
 
 # Boucle principale
 afficher_menu()
@@ -877,18 +871,18 @@ while running:
             if event.key == pygame.K_ESCAPE:
                 choix = afficher_menu_pause()
                 if choix == "recommencer":
-                    hopital = generer_hopital(NB_LIGNES, NB_COLONNES)
-                    cles = placer_cles(hopital, NOMBRE_CLES)
-                    joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
+                    hopital = generer_hopital(nombre_lignes, nombre_colonnes)
+                    cles = placer_cles(hopital, nombre_cles)
+                    joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
                     cles_collectees = 0
-                    ennemis = initialiser_ennemis(hopital, NOMBRE_ENNEMIES)
+                    ennemis = initialiser_ennemis(hopital, nombre_ennemis)
                 elif choix == "menu":
                     # Réinitialiser le jeu
-                    hopital = generer_hopital(NB_LIGNES, NB_COLONNES)
-                    cles = placer_cles(hopital, NOMBRE_CLES)
-                    joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
+                    hopital = generer_hopital(nombre_lignes, nombre_colonnes)
+                    cles = placer_cles(hopital, nombre_cles)
+                    joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
                     cles_collectees = 0
-                    ennemis = initialiser_ennemis(hopital, NOMBRE_ENNEMIES)
+                    ennemis = initialiser_ennemis(hopital, nombre_ennemis)
                     # Retourner au menu
                     afficher_menu()
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -903,10 +897,10 @@ while running:
     souris_x, souris_y = pygame.mouse.get_pos()
 
     # Calculer la position du joueur à l'écran
-    joueur_ecran_x = joueur_pos[0] * TAILLE_CASE - \
-        camera_offset[0] + TAILLE_CASE // 2
-    joueur_ecran_y = joueur_pos[1] * TAILLE_CASE - \
-        camera_offset[1] + TAILLE_CASE // 2
+    joueur_ecran_x = joueur_pos[0] * taille_case - \
+        camera_offset[0] + taille_case // 2
+    joueur_ecran_y = joueur_pos[1] * taille_case - \
+        camera_offset[1] + taille_case // 2
 
     # Calculer l'angle entre le joueur et la souris
     dx = souris_x - joueur_ecran_x
@@ -918,7 +912,7 @@ while running:
 
     # Vérifier si assez de temps s'est écoulé depuis le dernier mouvement
     temps_actuel = pygame.time.get_ticks()
-    if temps_actuel - dernier_mouvement >= DELAI_MOUVEMENT:
+    if temps_actuel - dernier_mouvement >= delai_mouvement:
         if touches[pygame.K_UP] or touches[pygame.K_z]:
             nouvelle_pos[1] -= 1
             derniere_direction = (0, -1)
@@ -941,18 +935,18 @@ while running:
         joueur_pos = nouvelle_pos
 
     # Mise à jour de la caméra pour suivre le joueur
-    camera_offset[0] = joueur_pos[0] * TAILLE_CASE - LARGEUR // 2
-    camera_offset[1] = joueur_pos[1] * TAILLE_CASE - HAUTEUR // 2
+    camera_offset[0] = joueur_pos[0] * taille_case - largeur // 2
+    camera_offset[1] = joueur_pos[1] * taille_case - hauteur // 2
 
     # Vérifier la collision avec les ennemis
     if verifier_collision_ennemis(joueur_pos, ennemis):
         if game_over() == "menu":
             # Réinitialiser le jeu
-            hopital = generer_hopital(NB_LIGNES, NB_COLONNES)
-            cles = placer_cles(hopital, NOMBRE_CLES)
-            joueur_pos = [NB_COLONNES // 2, NB_LIGNES // 2]
+            hopital = generer_hopital(nombre_lignes, nombre_colonnes)
+            cles = placer_cles(hopital, nombre_cles)
+            joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
             cles_collectees = 0
-            ennemis = initialiser_ennemis(hopital, NOMBRE_ENNEMIES)
+            ennemis = initialiser_ennemis(hopital, nombre_ennemis)
             # Retourner au menu
             afficher_menu()
 
@@ -972,8 +966,8 @@ while running:
 
     # Dessiner les ennemis
     for ennemi in ennemis:
-        x = ennemi.x * TAILLE_CASE - camera_offset[0]
-        y = ennemi.y * TAILLE_CASE - camera_offset[1]
+        x = ennemi.x * taille_case - camera_offset[0]
+        y = ennemi.y * taille_case - camera_offset[1]
 
         # Calculer la distance entre le joueur et l'ennemi
         dx = ennemi.x - joueur_pos[0]
@@ -981,24 +975,24 @@ while running:
         distance = math.sqrt(dx*dx + dy*dy)
 
         # Vérifier si l'ennemi est dans le cercle proche
-        if distance * TAILLE_CASE <= RAYON_VISION_PROCHE:
+        if distance * taille_case <= rayon_vision_proche:
             if not a_mur_entre(joueur_pos, (ennemi.x, ennemi.y), hopital):
-                pygame.draw.rect(fenetre, ENNEMIES,
-                                 (x, y, TAILLE_CASE, TAILLE_CASE))
+                pygame.draw.rect(fenetre, ennemis,
+                                 (x, y, taille_case, taille_case))
         # Sinon, vérifier s'il est dans le cône de vision
-        elif est_dans_cone(joueur_pos, (ennemi.x, ennemi.y), angle_de_vue, cone_length):
+        elif est_dans_cone(joueur_pos, (ennemi.x, ennemi.y), angle_de_vue, cone_longueur):
             if not a_mur_entre(joueur_pos, (ennemi.x, ennemi.y), hopital):
-                pygame.draw.rect(fenetre, ENNEMIES,
-                                 (x, y, TAILLE_CASE, TAILLE_CASE))
+                pygame.draw.rect(fenetre, ennemis,
+                                 (x, y, taille_case, taille_case))
 
     # Victoire si le joueur atteint la sortie avec toutes les clés
-    if hopital[joueur_pos[1]][joueur_pos[0]] == "S" and cles_collectees == NOMBRE_CLES:
+    if hopital[joueur_pos[1]][joueur_pos[0]] == "S" and cles_collectees == nombre_cles:
         arreter_musique()  # Stop game music
         afficher_victoire()
         running = False
 
     # Dessiner le compteur de clés après avoir dessiné tout le reste
-    dessiner_compteur_cles(fenetre, cles_collectees, NOMBRE_CLES)
+    dessiner_compteur_cles(fenetre, cles_collectees, nombre_cles)
 
     pygame.display.flip()
     horloge.tick(60)  # Limiter à 60 FPS

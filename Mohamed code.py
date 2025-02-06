@@ -2,6 +2,7 @@ import pygame
 import random
 import sys
 import math
+import os
 
 # Initialisation de Pygame
 pygame.init()
@@ -25,8 +26,11 @@ cle = (255, 223, 0)
 ennemis = (255, 0, 0)
 bordeaux = (40, 0, 0)
 
-# Création de la fenêtre principale
-fenetre = pygame.display.set_mode((largeur, hauteur), pygame.FULLSCREEN)
+# Move this line up, before window creation
+is_fullscreen = True  # Default to fullscreen
+
+# Then create the window
+fenetre = pygame.display.set_mode((largeur, hauteur), pygame.FULLSCREEN if is_fullscreen else pygame.RESIZABLE)
 pygame.display.set_caption("Echoes of the Hollow")
 
 # Horloge pour contrôler les FPS
@@ -48,13 +52,11 @@ rayon_vision_proche = 100  # Rayon du cercle de vision autour du joueur
 # Génération initiale
 nombre_lignes = (hauteur // taille_case) * 8
 nombre_colonnes = (largeur // taille_case) * 8
-print("Nombre de lignes :", nombre_lignes, "Nombre de colonnes :", nombre_colonnes)  # Vérification
 joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
 camera_offset = [0, 0]
 
 # Initialisation de l'angle de vue avec une valeur par défaut
 angle_de_vue = 270  # 0 = droite, 90 = bas, 180 = gauche, 270 = haut
-derniere_direction = (0, 0)  # Direction initiale (aucune touche appuyée)
 
 # Structure pour stocker les ennemis avec leurs positions et directions
 ennemis = []  # Liste qui contiendra des dictionnaires pour chaque ennemi
@@ -62,11 +64,6 @@ ennemis = []  # Liste qui contiendra des dictionnaires pour chaque ennemi
 # Ajouter ces variables après les autres paramètres du jeu
 delai_mouvement = 35  # Délai en millisecondes entre chaque mouvement
 dernier_mouvement = 0  # Pour suivre le temps du dernier mouvement
-
-# Optimisation des constantes globales
-taille_cache = 100  # Taille du cache pour les calculs trigonométriques
-cos_cache = {i: math.cos(math.radians(i)) for i in range(360)}
-sin_cache = {i: math.sin(math.radians(i)) for i in range(360)}
 
 # Ajouter une variable pour suivre l'index de la case sélectionnée
 index_case_selectionnee = 0
@@ -76,7 +73,14 @@ REsolUTIONS = [(800, 600), (1024, 768), (1280, 720), (1920, 1080)]
 resolution_index = 0  # Index de la résolution sélectionnée
 
 # Add near the top of the file with other constants
-CURSOR_SIZE = 5  # Size of the custom cursor
+VIRTUAL_WIDTH = 1920  # Base resolution width
+VIRTUAL_HEIGHT = 1080  # Base resolution height
+
+# Add these constants near the top with other settings
+CROSSHAIR_SIZES = [3, 5, 7, 10]  # Different crosshair sizes
+CROSSHAIR_STYLES = ["Croix", "Point", "Aucun"]  # Different crosshair styles
+crosshair_size_index = 1  # Default to second size (5)
+crosshair_style_index = 0  # Default to Cross
 
 class Ennemi:
     def __init__(self, x, y):
@@ -194,39 +198,7 @@ def deplacer_ennemis(hopital, ennemis, joueur_pos):
             else:
                 ennemi.direction = random.choice(
                     [(0, 1), (0, -1), (1, 0), (-1, 0)])
-
-
-def dessiner_vision_ennemis(surface, ennemi, camera_offset):
-    # Dessiner le cône de vision des ennemis (pour le débogage)
-    x = ennemi.x * taille_case - camera_offset[0] + taille_case // 2
-    y = ennemi.y * taille_case - camera_offset[1] + taille_case // 2
-
-    # Déterminer l'angle de base selon la direction
-    angle_base = 0
-    if ennemi.direction == (0, -1):
-        angle_base = 270
-    elif ennemi.direction == (0, 1):
-        angle_base = 90
-    elif ennemi.direction == (-1, 0):
-        angle_base = 180
-    elif ennemi.direction == (1, 0):
-        angle_base = 0
-
-    start_angle = math.radians(angle_base - ennemi.angle_vision / 2)
-    end_angle = math.radians(angle_base + ennemi.angle_vision / 2)
-
-    points = [(x, y)]
-    steps = 20
-    for i in range(steps + 1):
-        theta = start_angle + (end_angle - start_angle) * i / steps
-        px = x + math.cos(theta) * ennemi.cone_vision * taille_case / 10
-        py = y + math.sin(theta) * ennemi.cone_vision * taille_case / 10
-        points.append((px, py))
-
-    # Dessiner le cône de vision en semi-transparent
-    s = pygame.Surface((largeur, hauteur), pygame.SRCALPHA)
-    pygame.draw.polygon(s, (255, 0, 0, 30), points)
-    surface.blit(s, (0, 0))
+                
 
 
 def verifier_collision_ennemis(joueur_pos, ennemis):
@@ -247,19 +219,6 @@ def game_over():
     pygame.display.flip()
     pygame.time.delay(2000)  # Attendre 2 secondes
     return "menu"  # Retourner au menu
-
-
-def dessiner_vision_cone(surface, position, angle, length):
-    x, y = position
-    start_angle = math.radians(angle - cone_angle / 2)
-    end_angle = math.radians(angle + cone_angle / 2)
-    points = [position]
-    steps = 50
-    for i in range(steps + 1):
-        theta = start_angle + i * (end_angle - start_angle) / steps
-        points.append((x + length * math.cos(theta),
-                      y + length * math.sin(theta)))
-    pygame.draw.polygon(surface, blanc, points)
 
 
 def appliquer_masque_vision(surface, position, angle, length):
@@ -370,18 +329,6 @@ def placer_cles(hopital, nombre_cles):
     return cles
 
 
-def placer_ennemies(hopital, nombre_ennemis):
-    ennemies = []
-    case_vide = [(i, j) for i, ligne in enumerate(hopital)
-                 for j, case in enumerate(ligne) if case == " "]
-    for j in range(nombre_ennemis):
-        x, y = random.choice(case_vide)
-        ennemies.append((x, y))
-        hopital[x][y] = "Y"  # Ajoute un ennemie à cet emplacement
-        case_vide.remove((x, y))
-    return ennemies
-
-
 def est_dans_cone(joueur_pos, case_pos, angle, length):
     """Version optimisée de la vérification du cône"""
     dx = case_pos[0] - joueur_pos[0]
@@ -458,16 +405,16 @@ def a_mur_entre(joueur_pos, case_pos, hopital):
 
 def dessiner_hopital(hopital, joueur_pos, camera_offset):
     """Version optimisée du rendu"""
-    fenetre.fill(noir)
+    # Create a virtual surface at base resolution
+    virtual_surface = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+    virtual_surface.fill(noir)
 
     # Calculer les limites visibles avec une marge
     marge = 2
     debut_x = max(0, int(camera_offset[0] // taille_case) - marge)
     debut_y = max(0, int(camera_offset[1] // taille_case) - marge)
-    fin_x = min(len(hopital[0]), int(
-        (camera_offset[0] + largeur) // taille_case) + marge)
-    fin_y = min(len(hopital), int(
-        (camera_offset[1] + hauteur) // taille_case) + marge)
+    fin_x = min(len(hopital[0]), int((camera_offset[0] + largeur) // taille_case) + marge)
+    fin_y = min(len(hopital), int((camera_offset[1] + hauteur) // taille_case) + marge)
 
     # Pré-calculer les offsets de caméra
     cam_x = camera_offset[0]
@@ -486,14 +433,14 @@ def dessiner_hopital(hopital, joueur_pos, camera_offset):
             pygame.draw.rect(temp_surface, couleur,
                              (x, y, taille_case, taille_case))
 
-    fenetre.blit(temp_surface, (0, 0))
+    virtual_surface.blit(temp_surface, (0, 0))
 
     # Appliquer le masque de vision
     joueur_centre = (
         joueur_pos[0] * taille_case - cam_x + taille_case // 2,
         joueur_pos[1] * taille_case - cam_y + taille_case // 2
     )
-    appliquer_masque_vision(fenetre, joueur_centre, angle_de_vue, cone_longueur)
+    appliquer_masque_vision(virtual_surface, joueur_centre, angle_de_vue, cone_longueur)
 
     # Rendu des objets spéciaux
     for i in range(debut_y, fin_y):
@@ -504,7 +451,7 @@ def dessiner_hopital(hopital, joueur_pos, camera_offset):
                 if est_visible(joueur_pos, (j, i), hopital):
                     x = j * taille_case - cam_x
                     couleur = sortie if case == "S" else cle
-                    pygame.draw.rect(fenetre, couleur,
+                    pygame.draw.rect(virtual_surface, couleur,
                                      (x, y, taille_case, taille_case))
 
     # Dessiner le joueur
@@ -522,14 +469,18 @@ def dessiner_hopital(hopital, joueur_pos, camera_offset):
         joueur_x -= (joueur_rotated.get_width() - joueur.get_width()) // 2
         joueur_y -= (joueur_rotated.get_height() - joueur.get_height()) // 2
         
-        fenetre.blit(joueur_rotated, (joueur_x, joueur_y))
+        virtual_surface.blit(joueur_rotated, (joueur_x, joueur_y))
     else:
         # Fallback to rectangle if image loading failed
-        pygame.draw.rect(fenetre, joueur, (
+        pygame.draw.rect(virtual_surface, joueur, (
             joueur_pos[0] * taille_case - camera_offset[0],
             joueur_pos[1] * taille_case - camera_offset[1],
             taille_case, taille_case
         ))
+
+    # At the end of the function, scale the virtual surface to the actual window size
+    scaled_surface = pygame.transform.scale(virtual_surface, (largeur, hauteur))
+    fenetre.blit(scaled_surface, (0, 0))
 
 # Vérification de la validité du déplacement
 
@@ -554,37 +505,85 @@ def afficher_victoire():
 
 
 def afficher_credits():
+    # Constants for animation
+    SCROLL_SPEED = 5  # Reduced for smoother scrolling
+    TITLE_SIZE = 100
+    NAME_SIZE = 80
+    ROLE_SIZE = 50
+    SPACING = 120      # Regular spacing
+    SPACING_2 = 30     # Small spacing (between name and role)
+    SPACING_3 = 200    # Large spacing (after title)
+    
+    # Credits content with roles
+    credits_data = [
+        ("Développeurs :", TITLE_SIZE),
+        ("", SPACING_3),  # Large spacing after title
+        ("Iaroslav Lushcheko", NAME_SIZE),
+        ("", SPACING_2),  # Small spacing between name and role
+        ("Programmation, Game Design", ROLE_SIZE),
+        ("", SPACING),    # Regular spacing between developers
+        ("Eliott Raulet", NAME_SIZE),
+        ("", SPACING_2),  # Small spacing between name and role
+        ("Level Design, Game Mechanics", ROLE_SIZE),
+        ("", SPACING),    # Regular spacing between developers
+        ("Mohamed El Mekkawy", NAME_SIZE),
+        ("", SPACING_2),  # Small spacing between name and role
+        ("UI/UX, Game Systems", ROLE_SIZE),
+        ("", SPACING),    # Regular spacing between developers
+        ("Ugo Guillemart", NAME_SIZE),
+        ("", SPACING_2),  # Small spacing between name and role
+        ("Sound Design, Testing", ROLE_SIZE),
+        ("", SPACING_3),  # Extra spacing at the end
+    ]
+    
+    # Calculate total height of all text
+    total_height = sum([size if text == "" else 80 for text, size in credits_data])
+    y_offset = float(hauteur)  # Use float for smoother scrolling
+    
     while True:
         fenetre.fill(noir)
-
-        # Afficher les noms en colonne avec une taille de police plus grande
-        noms = [
-            "Iaroslav Lushcheko",
-            "Eliott Raulet",
-            "Mohamed El Mekkawy",
-            "Ugo Guillemart"
-        ]
-
-        # Ajuster la position de départ pour centrer verticalement
-        for i, nom in enumerate(noms):
-            # Taille de police augmentée
-            texte = pygame.font.Font(
-                "./assets/font/HelpMe.ttf", 80).render(nom, True, blanc)
-            # Ajustement de la position
-            texte_rect = texte.get_rect(
-                center=(largeur // 2, hauteur // 2 - 50 + i * 90))
-            fenetre.blit(texte, texte_rect)
-
-        # Vérifier les événements
+        
+        current_y = int(y_offset)  # Convert to int only for drawing
+        
+        # Draw each credit entry
+        for text, size in credits_data:
+            if text:  # Only render non-empty strings
+                texte = pygame.font.Font("./assets/font/HelpMe.ttf", size).render(text, True, blanc)
+                texte_rect = texte.get_rect(center=(largeur // 2, current_y))
+                
+                # Only draw if within screen bounds with some margin
+                if -50 <= current_y <= hauteur + 50:
+                    # Add glow effect for titles
+                    if size == TITLE_SIZE:
+                        glow = pygame.font.Font("./assets/font/HelpMe.ttf", size).render(text, True, (100, 100, 100))
+                        glow_rect = glow.get_rect(center=(largeur // 2, current_y))
+                        fenetre.blit(glow, (glow_rect.x + 2, glow_rect.y + 2))
+                    
+                    fenetre.blit(texte, texte_rect)
+            
+            # Use the actual spacing value from the tuple
+            current_y += size if text == "" else 80
+        
+        # Handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:  # Retour au menu principal
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # Only handle left click, ignore scroll
                     return
-
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return
+        
+        # Automatic scroll
+        y_offset -= SCROLL_SPEED
+        
+        if y_offset < -total_height:
+            y_offset = float(hauteur)
+        
         pygame.display.flip()
+        horloge.tick(60)
 
 
 def bords_arrondis(surface, color, rect, radius):
@@ -670,13 +669,13 @@ def afficher_menu():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button < 4:  # Only buttons 1-3, ignore scroll
                 if bouton_jouer.collidepoint(event.pos):
                     return
                 if bouton_crédits.collidepoint(event.pos):
-                    afficher_credits()  # Afficher les crédits
+                    afficher_credits()
                 if bouton_parametres.collidepoint(event.pos):
-                    afficher_parametres()  # Afficher les paramètres
+                    afficher_parametres()
                 if bouton_quitter.collidepoint(event.pos):
                     pygame.quit()
                     sys.exit()
@@ -688,66 +687,80 @@ def afficher_menu_pause():
     while True:
         fenetre.fill(noir)
 
-        # Récupérer la position de la souris
-        souris_x, souris_y = pygame.mouse.get_pos()
+        # Title at the top
+        titre = pygame.font.Font("./assets/font/November.ttf", 100).render("Echoes of the Hollow", True, blanc)
+        titre_rect = titre.get_rect(center=(largeur // 2, hauteur // 6))
+        fenetre.blit(titre, titre_rect)
 
-        # Vérifier si la touche Échap est pressée
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if bouton_continuer.collidepoint(event.pos):
-                    pygame.mouse.set_visible(False)  # Hide cursor when returning to game
-                    return "continuer"
-                if bouton_recommencer.collidepoint(event.pos):
-                    return "recommencer"
-                if bouton_menu_principal.collidepoint(event.pos):
-                    return "menu"
-                if bouton_quitter.collidepoint(event.pos):
-                    pygame.quit()
-                    sys.exit()
-                if bouton_parametres.collidepoint(event.pos):
-                    afficher_parametres()  # Afficher les paramètres
+        # Return button at top left with arrow
+        bouton_retour = pygame.Rect(20, 20, 200, 60)  # Made wider again to fit text
+        if bouton_retour.collidepoint(pygame.mouse.get_pos()):
+            couleur_retour = (255, 0, 0)
+            bouton_retour = bouton_retour.inflate(20, 20)
+        else:
+            couleur_retour = bordeaux
+        bords_arrondis(fenetre, couleur_retour, bouton_retour, 15)
+        
+        # Draw arrow and text separately
+        texte_arrow = pygame.font.Font("./assets/font/Arrows.ttf", 40).render("R", True, blanc)
+        texte_retour = pygame.font.Font("./assets/font/HelpMe.ttf", 30).render("Retour", True, blanc)
+        
+        # Position arrow and text
+        fenetre.blit(texte_arrow, (bouton_retour.x + 15, bouton_retour.centery - texte_arrow.get_height() // 2))
+        fenetre.blit(texte_retour, (bouton_retour.x + 45, bouton_retour.centery - texte_retour.get_height() // 2))
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    pygame.mouse.set_visible(False)  # Hide cursor when returning to game
-                    return "continuer"
-
-        # Boutons
-        bouton_continuer = pygame.Rect(largeur // 2 - 250, 230, 520, 100)
-        bouton_recommencer = pygame.Rect(largeur // 2 - 210, 350, 440, 70)
-        bouton_parametres = pygame.Rect(largeur // 2 - 170, 440, 360, 60)
-        bouton_menu_principal = pygame.Rect(largeur // 2 - 140, 520, 300, 70)
-        bouton_quitter = pygame.Rect(largeur // 2 - 120, 610, 260, 70)
-
-        # Liste des boutons et leurs textes
+        # Centered menu buttons with consistent gaps (moved up)
+        button_gap = 120  # Consistent gap between buttons
+        start_y = hauteur // 3  # Starting Y position moved up (was hauteur // 2 - 150)
         boutons = [
-            (bouton_continuer, "Continuer", 80),
-            (bouton_recommencer, "Recommencer", 60),
-            (bouton_parametres, "Paramètres", 60),
-            (bouton_menu_principal, "Menu Principal", 50),
-            (bouton_quitter, "Quitter", 50),
+            (pygame.Rect(largeur // 2 - 300, start_y, 650, 100), "Continuer", 60),
+            (pygame.Rect(largeur // 2 - 300, start_y + button_gap, 650, 100), "Recommencer", 60),
+            (pygame.Rect(largeur // 2 - 300, start_y + button_gap * 2, 650, 100), "Paramètres", 60),
+            (pygame.Rect(largeur // 2 - 300, start_y + button_gap * 3, 650, 100), "Menu Principal", 60),
+            (pygame.Rect(largeur // 2 - 300, start_y + button_gap * 4, 650, 100), "Quitter", 60),
         ]
 
+        souris_x, souris_y = pygame.mouse.get_pos()
+
         for bouton, texte, taille_texte in boutons:
-            # Vérifier si la souris est sur le bouton
             if bouton.collidepoint(souris_x, souris_y):
-                couleur = (255, 0, 0)  # Rouge
-                # Agrandir légèrement le bouton
+                couleur = (255, 0, 0)
                 bouton = bouton.inflate(20, 20)
             else:
                 couleur = bordeaux
 
-            pygame.draw.rect(fenetre, couleur, bouton)
-            texte_rendu = pygame.font.Font(
-                "./assets/font/HelpMe.ttf", taille_texte).render(texte, True, blanc)
-            fenetre.blit(
-                texte_rendu,
-                (bouton.centerx - texte_rendu.get_width() // 2,
-                 bouton.centery - texte_rendu.get_height() // 2),
-            )
+            bords_arrondis(fenetre, couleur, bouton, 15)
+            texte_rendu = pygame.font.Font("./assets/font/HelpMe.ttf", taille_texte).render(texte, True, blanc)
+            fenetre.blit(texte_rendu, (bouton.centerx - texte_rendu.get_width() // 2,
+                                      bouton.centery - texte_rendu.get_height() // 2))
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button < 4:
+                if bouton_retour.collidepoint(event.pos):
+                    pygame.mouse.set_visible(False)
+                    return "continuer"
+                for bouton, texte, _ in boutons:
+                    if bouton.collidepoint(event.pos):
+                        if texte == "Continuer":
+                            pygame.mouse.set_visible(False)
+                            return "continuer"
+                        elif texte == "Recommencer":
+                            return "recommencer"
+                        elif texte == "Paramètres":
+                            afficher_parametres()
+                        elif texte == "Menu Principal":
+                            return "menu"
+                        elif texte == "Quitter":
+                            pygame.quit()
+                            sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.mouse.set_visible(False)
+                    return "continuer"
 
         pygame.display.flip()
 
@@ -819,44 +832,186 @@ def dessiner_inventaire(surface):
 
 
 def afficher_parametres():
-    global resolution_index, largeur, hauteur, fenetre
+    global resolution_index, largeur, hauteur, fenetre, crosshair_size_index, crosshair_style_index, is_fullscreen
+    
+    selected_section = 0  # 0 = Display, 1 = Crosshair
+    sections = ["Affichage", "Réticule"]
+    
+    # Add these variables at the start of the function
+    slider_rect = pygame.Rect(0, 0, 200, 10)
+    slider_pos = CROSSHAIR_SIZES[crosshair_size_index]
+    typing_active = False
+    text_input = str(slider_pos)
+    dragging_slider = False  # Initialize dragging_slider variable
+    
     while True:
         fenetre.fill(noir)
+        center_x = largeur // 2  # Move this line here, before any section checks
 
-        # Titre des paramètres
-        titre = pygame.font.Font(None, 60).render("Paramètres", True, blanc)
-        fenetre.blit(titre, (largeur // 2 - titre.get_width() // 2, 50))
+        # Center sections at the top
+        section_total_width = sum([200 for _ in sections])
+        section_start_x = (largeur - section_total_width) // 2
 
-        # Afficher les résolutions disponibles
-        for i, (largeur, hauteur) in enumerate(REsolUTIONS):
-            resolution_texte = f"{largeur} x {hauteur}"
-            # Mettre en surbrillance la résolution sélectionnée
-            couleur = blanc if i == resolution_index else gris
-            texte = pygame.font.Font(None, 40).render(
-                resolution_texte, True, couleur)
-            fenetre.blit(texte, (largeur // 2 - texte.get_width() //
-                         2, 150 + i * 50))  # Espacement vertical
+        # Draw sections at the top
+        for i, section in enumerate(sections):
+            color = blanc if i == selected_section else gris
+            texte = pygame.font.Font(None, 40).render(section, True, color)
+            text_rect = texte.get_rect(center=(section_start_x + i * 200 + 100, 50))
+            fenetre.blit(texte, text_rect)
 
-        # Vérifier les événements
+        # Display Settings Section
+        if selected_section == 0:
+            # Resolutions list
+            for i, (width, height) in enumerate(REsolUTIONS):
+                resolution_texte = f"{width} x {height}"
+                if is_fullscreen:
+                    color = (100, 100, 100)  # Dark gray for disabled state
+                else:
+                    color = blanc if i == resolution_index else gris
+                texte = pygame.font.Font(None, 40).render(resolution_texte, True, color)
+                text_rect = texte.get_rect(center=(largeur // 2, 150 + i * 50))
+                fenetre.blit(texte, text_rect)
+            
+            # Fullscreen toggle
+            fullscreen_text = "Plein écran: " + ("Oui" if is_fullscreen else "Non")
+            color = blanc if is_fullscreen else gris
+            texte = pygame.font.Font(None, 40).render(fullscreen_text, True, color)
+            text_rect = texte.get_rect(center=(largeur // 2, 150 + len(REsolUTIONS) * 50))
+            fenetre.blit(texte, text_rect)
+
+        # Crosshair Settings Section
+        elif selected_section == 1:
+            center_x = largeur // 2
+            preview_x = center_x
+
+            # Draw "Taille" text and controls
+            texte = pygame.font.Font(None, 40).render("Taille:", True, blanc)
+            text_rect = texte.get_rect(center=(center_x - 150, 150))
+            fenetre.blit(texte, text_rect)
+
+            # Draw slider (grayed out if "Aucun" is selected)
+            slider_rect.centerx = center_x
+            slider_rect.centery = 150
+            slider_color = (50, 50, 50) if CROSSHAIR_STYLES[crosshair_style_index] == "Aucun" else gris
+            pygame.draw.rect(fenetre, slider_color, slider_rect)
+            
+            # Draw slider handle
+            handle_pos = slider_rect.left + (slider_pos - 1) * (slider_rect.width / 20)
+            if CROSSHAIR_STYLES[crosshair_style_index] != "Aucun":
+                pygame.draw.circle(fenetre, blanc, (handle_pos, slider_rect.centery), 8)
+            
+            # Draw text input (without border)
+            font = pygame.font.Font(None, 40)
+            text_surface = font.render(text_input, True, blanc if CROSSHAIR_STYLES[crosshair_style_index] != "Aucun" else (50, 50, 50))
+            text_rect = text_surface.get_rect(center=(center_x + 150, 150))
+            fenetre.blit(text_surface, text_rect)
+
+            # Draw "Style" text and styles
+            style_text = pygame.font.Font(None, 40).render("Style:", True, blanc)
+            style_rect = style_text.get_rect(center=(center_x - 150, 220))
+            fenetre.blit(style_text, style_rect)
+
+            # Crosshair style selection
+            for i, style in enumerate(CROSSHAIR_STYLES):
+                color = blanc if i == crosshair_style_index else gris
+                texte = pygame.font.Font(None, 40).render(style, True, color)
+                text_rect = texte.get_rect(center=(center_x, 220 + i * 50))
+                fenetre.blit(texte, text_rect)
+
+            # Add preview section with bigger gap
+            preview_y = 500  # Increased from 400
+            preview_text = pygame.font.Font(None, 40).render("Aperçu", True, blanc)
+            preview_text_rect = preview_text.get_rect(center=(center_x, preview_y - 50))
+            fenetre.blit(preview_text, preview_text_rect)
+
+            # Preview box
+            preview_size = 150
+            border_padding = 10
+            outer_rect = pygame.Rect(preview_x - preview_size//2 - border_padding, 
+                                   preview_y - preview_size//2 - border_padding,
+                                   preview_size + border_padding*2, 
+                                   preview_size + border_padding*2)
+            pygame.draw.rect(fenetre, gris, outer_rect)
+            preview_rect = pygame.Rect(preview_x - preview_size//2, preview_y - preview_size//2, 
+                                     preview_size, preview_size)
+            pygame.draw.rect(fenetre, sol, preview_rect)
+            pygame.draw.rect(fenetre, blanc, preview_rect, 1)
+
+            # Draw crosshair preview
+            if CROSSHAIR_STYLES[crosshair_style_index] == "Croix":
+                pygame.draw.line(fenetre, blanc, (preview_x - slider_pos, preview_y), 
+                               (preview_x + slider_pos, preview_y))
+                pygame.draw.line(fenetre, blanc, (preview_x, preview_y - slider_pos), 
+                               (preview_x, preview_y + slider_pos))
+            elif CROSSHAIR_STYLES[crosshair_style_index] == "Point":
+                pygame.draw.circle(fenetre, blanc, (preview_x, preview_y), slider_pos)
+
+        # Handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:  # Retour au menu principal
+                if event.key == pygame.K_ESCAPE:
                     return
+                elif event.key == pygame.K_LEFT and selected_section > 0:
+                    selected_section -= 1
+                elif event.key == pygame.K_RIGHT and selected_section < len(sections) - 1:
+                    selected_section += 1
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                # Vérifier si la souris est sur une résolution
-                for i in range(len(REsolUTIONS)):
-                    if (largeur // 2 - 100 < pygame.mouse.get_pos()[0] < largeur // 2 + 100 and
-                            150 + i * 50 < pygame.mouse.get_pos()[1] < 150 + (i + 1) * 50):
-                        resolution_index = i
-                        # Mettre à jour la taille de la fenêtre
-                        largeur, hauteur = REsolUTIONS[resolution_index]
-                        fenetre = pygame.display.set_mode(
-                            # Changer la résolution
-                            (largeur, hauteur), pygame.RESIZABLE)
+                mouse_x, mouse_y = event.pos
+                # Section selection
+                if mouse_y < 100:  # Click in the section headers area
+                    for i in range(len(sections)):
+                        if section_start_x + i * 200 <= mouse_x <= section_start_x + (i + 1) * 200:
+                            selected_section = i
+
+                elif selected_section == 0:  # Display settings
+                    # Resolution selection - only process if not in fullscreen
+                    if not is_fullscreen:
+                        for i in range(len(REsolUTIONS)):
+                            if 150 <= mouse_y <= 150 + len(REsolUTIONS) * 50:
+                                click_y = (mouse_y - 150) // 50
+                                if click_y < len(REsolUTIONS):
+                                    resolution_index = click_y
+                                    largeur, hauteur = REsolUTIONS[resolution_index]
+                                    fenetre = pygame.display.set_mode((largeur, hauteur), pygame.RESIZABLE)
+                                    os.environ['SDL_VIDEO_CENTERED'] = '1'
+                    
+                    # Fullscreen toggle
+                    if 150 + len(REsolUTIONS) * 50 - 25 <= mouse_y <= 150 + len(REsolUTIONS) * 50 + 25:
+                        is_fullscreen = not is_fullscreen
+                        flags = pygame.FULLSCREEN if is_fullscreen else pygame.RESIZABLE
+                        fenetre = pygame.display.set_mode((largeur, hauteur), flags)
+
+            if selected_section == 1:  # Crosshair settings
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_x, mouse_y = event.pos
+                    # Handle slider click/drag
+                    if slider_rect.collidepoint(event.pos) and CROSSHAIR_STYLES[crosshair_style_index] != "Aucun":
+                        dragging_slider = True
+                        # Update slider position immediately on click
+                        slider_pos = (mouse_x - slider_rect.left) / slider_rect.width * 20 + 1
+                        slider_pos = max(1, min(20, slider_pos))
+                        text_input = str(int(slider_pos))
+                    # Style selection
+                    for i, style in enumerate(CROSSHAIR_STYLES):
+                        style_y = 220 + i * 50
+                        if abs(mouse_x - center_x) < 100 and abs(mouse_y - style_y) < 25:
+                            crosshair_style_index = i
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    dragging_slider = False
+                elif event.type == pygame.MOUSEMOTION and dragging_slider:
+                    mouse_x = event.pos[0]
+                    if slider_rect.left <= mouse_x <= slider_rect.right:
+                        slider_pos = (mouse_x - slider_rect.left) / slider_rect.width * 20 + 1
+                        slider_pos = max(1, min(20, slider_pos))
+                        text_input = str(int(slider_pos))
+
+        # Update crosshair size from slider
+        crosshair_size_index = min(len(CROSSHAIR_SIZES) - 1, 
+                                 max(0, int((slider_pos - 1) / 5)))
 
         pygame.display.flip()
 
@@ -895,7 +1050,9 @@ while running:
             running = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
+                pygame.mouse.set_visible(True)  # Show cursor in menu
                 choix = afficher_menu_pause()
+                pygame.mouse.set_visible(False)  # Hide cursor when returning to game
                 if choix == "recommencer":
                     hopital = generer_hopital(nombre_lignes, nombre_colonnes)
                     cles = placer_cles(hopital, nombre_cles)
@@ -912,11 +1069,9 @@ while running:
                     # Retourner au menu
                     afficher_menu()
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 4:  # Molette de la souris vers le haut
-                # Ne pas aller en dessous de 0
+            if event.button == 4:  # Mouse wheel up
                 index_case_selectionnee = max(0, index_case_selectionnee - 1)
-            elif event.button == 5:  # Molette de la souris vers le bas
-                # Ne pas dépasser 4 (5 cases - 1)
+            elif event.button == 5:  # Mouse wheel down
                 index_case_selectionnee = min(4, index_case_selectionnee + 1)
 
     # Obtenir la position de la souris
@@ -941,19 +1096,15 @@ while running:
     if temps_actuel - dernier_mouvement >= delai_mouvement:
         if touches[pygame.K_UP] or touches[pygame.K_z]:
             nouvelle_pos[1] -= 1
-            derniere_direction = (0, -1)
             dernier_mouvement = temps_actuel
         elif touches[pygame.K_DOWN] or touches[pygame.K_s]:
             nouvelle_pos[1] += 1
-            derniere_direction = (0, 1)
             dernier_mouvement = temps_actuel
         elif touches[pygame.K_LEFT] or touches[pygame.K_q]:
             nouvelle_pos[0] -= 1
-            derniere_direction = (-1, 0)
             dernier_mouvement = temps_actuel
         elif touches[pygame.K_RIGHT] or touches[pygame.K_d]:
             nouvelle_pos[0] += 1
-            derniere_direction = (1, 0)
             dernier_mouvement = temps_actuel
 
     # Vérifie si le déplacement est valide
@@ -1020,20 +1171,16 @@ while running:
     # Dessiner le compteur de clés après avoir dessiné tout le reste
     dessiner_compteur_cles(fenetre, cles_collectees, nombre_cles)
 
-    # Draw custom cursor (small cross)
-    if not pygame.mouse.get_visible():  # Only draw custom cursor when default is hidden
+    # Draw custom cursor based on selected style
+    if not pygame.mouse.get_visible():
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        # Vertical line
-        pygame.draw.line(fenetre, blanc, 
-                        (mouse_x, mouse_y - CURSOR_SIZE), 
-                        (mouse_x, mouse_y + CURSOR_SIZE))
-        # Horizontal line
-        pygame.draw.line(fenetre, blanc, 
-                        (mouse_x - CURSOR_SIZE, mouse_y), 
-                        (mouse_x + CURSOR_SIZE, mouse_y))
+        size = CROSSHAIR_SIZES[crosshair_size_index]
         
-        # Optional: Add a dot in the center
-        pygame.draw.circle(fenetre, blanc, (mouse_x, mouse_y), 1)
+        if CROSSHAIR_STYLES[crosshair_style_index] == "Croix":
+            pygame.draw.line(fenetre, blanc, (mouse_x - size, mouse_y), (mouse_x + size, mouse_y))
+            pygame.draw.line(fenetre, blanc, (mouse_x, mouse_y - size), (mouse_x, mouse_y + size))
+        elif CROSSHAIR_STYLES[crosshair_style_index] == "Point":
+            pygame.draw.circle(fenetre, blanc, (mouse_x, mouse_y), size)
 
     pygame.display.flip()
     horloge.tick(60)  # Limiter à 60 FPS

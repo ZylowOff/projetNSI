@@ -15,7 +15,9 @@ taille_case = 50  # Taille d'une case dans le labyrinthe
 noir = (0, 0, 0)
 blanc = (255, 255, 255)
 gris = (200, 200, 200)
-joueur = (41, 27, 14)
+# Load and scale player image
+joueur_img = pygame.image.load("./assets/characters/personnage.png")
+joueur = pygame.transform.scale(joueur_img, (taille_case * 2.5, taille_case * 2.5))  # Scale to tile size
 sortie = (0, 255, 0)
 mur = (100, 40, 30)
 sol = (115, 109, 115)
@@ -504,11 +506,28 @@ def dessiner_hopital(hopital, joueur_pos, camera_offset):
                                      (x, y, taille_case, taille_case))
 
     # Dessiner le joueur
-    pygame.draw.rect(fenetre, joueur, (
-        joueur_pos[0] * taille_case - cam_x,
-        joueur_pos[1] * taille_case - cam_y,
-        taille_case, taille_case
-    ))
+    if joueur:
+        # Calculate centered position by accounting for image size
+        joueur_x = joueur_pos[0] * taille_case - camera_offset[0] - (joueur.get_width() - taille_case) // 2
+        joueur_y = joueur_pos[1] * taille_case - camera_offset[1] - (joueur.get_height() - taille_case) // 2
+        
+        # Rotate image to face mouse
+        # Convert angle_de_vue to match Pygame's rotation (0° is up, clockwise)
+        rotation_angle = -(angle_de_vue + 90)  # +90 because original image faces up
+        joueur_rotated = pygame.transform.rotate(joueur, rotation_angle)
+        
+        # Recalculate position to keep rotation centered
+        joueur_x -= (joueur_rotated.get_width() - joueur.get_width()) // 2
+        joueur_y -= (joueur_rotated.get_height() - joueur.get_height()) // 2
+        
+        fenetre.blit(joueur_rotated, (joueur_x, joueur_y))
+    else:
+        # Fallback to rectangle if image loading failed
+        pygame.draw.rect(fenetre, joueur, (
+            joueur_pos[0] * taille_case - camera_offset[0],
+            joueur_pos[1] * taille_case - camera_offset[1],
+            taille_case, taille_case
+        ))
 
 # Vérification de la validité du déplacement
 

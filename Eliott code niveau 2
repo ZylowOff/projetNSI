@@ -9,7 +9,7 @@ TAILLE_CASE = 50
 # Paramètres
 DENSITE_BUISSONS = 0.03
 REDUCTION_VISION_BUISSON = 1
-VITESSE_NORMALE = 5
+VITESSE_NORMALE = 1
 VITESSE_BUISSON = 2
 
 # Couleurs
@@ -113,6 +113,19 @@ class Jardin:
         joueur_x, joueur_y = self.joueur_pos[0] * TAILLE_CASE - self.camera_offset[0], self.joueur_pos[1] * TAILLE_CASE - self.camera_offset[1]
         pygame.draw.rect(fenetre, COULEURS["J"], (joueur_x, joueur_y, TAILLE_CASE, TAILLE_CASE))
 
+def afficher_victoire():
+    debut = pygame.time.get_ticks()
+    while pygame.time.get_ticks() - debut < 30000:  # 30 secondes
+        fenetre.fill(NOIR)
+        texte = pygame.font.Font(None, 60).render("Victoire !", True, BLANC)
+        texte_rect = texte.get_rect(center=(1500 // 2, 900 // 2))
+        fenetre.blit(texte, texte_rect)
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
 
 if __name__ == "__main__":
     pygame.init()
@@ -151,6 +164,12 @@ if __name__ == "__main__":
             max(0, min(jardin.joueur_pos[1] * TAILLE_CASE - 450, HAUTEUR - 900)),
         ]
 
+        if jardin.grille[nouvelle_pos[1]][nouvelle_pos[0]] == "S":
+            afficher_victoire()
+            pygame.time.delay(30000)  # Attendre 30 secondes
+            running = False  # Quitter le jeu après la victoire
+
+        
         jardin.dessiner(fenetre)
         pygame.display.flip()
         horloge.tick(60)

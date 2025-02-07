@@ -1,2 +1,2 @@
 pygame == 2.6.1
-pip install screeninfo
+screeninfo == 0.8.1

@@ -23,8 +23,8 @@ except:
 taille_case = int(min(largeur, hauteur) / 20)  # Ajuste la taille des cases proportionnellement
 
 # Recalculer les dimensions du labyrinthe en fonction de la résolution
-nombre_lignes = (hauteur // taille_case) * 8
-nombre_colonnes = (largeur // taille_case) * 8
+nombre_lignes = (hauteur // taille_case) * 2
+nombre_colonnes = (largeur // taille_case) * 2
 
 # Ajuster les paramètres de vision en fonction de la résolution
 rayon_vision_proche = taille_case * 2  # Ajuste le rayon de vision proche
@@ -33,7 +33,12 @@ cone_longueur = min(largeur, hauteur) / 2  # Ajuste la longueur du cône de visi
 # Couleurs utilisées dans le jeu
 noir = (0, 0, 0)
 blanc = (255, 255, 255)
-gris = (200, 200, 200)
+gris = (128, 128, 128)  # Gris moyen
+gris_fonce = (50, 50, 50)  # Pour les cases non sélectionnées
+gris_clair = (150, 150, 150)  # Pour la case sélectionnée
+bordeaux = (40, 0, 0)
+ENNEMIES = (255, 0, 0)  # Rouge pour les ennemis
+
 # Load and scale player image
 joueur_img = pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/personnage.png")
 joueur = pygame.transform.scale(joueur_img, (taille_case * 1.25, taille_case * 1.25))  # Scale to tile size
@@ -42,7 +47,6 @@ mur = (100, 40, 30)
 sol = (115, 109, 115)
 cle = (255, 223, 0)
 ennemis = (255, 0, 0)
-bordeaux = (40, 0, 0)
 
 # Move this line up, before window creation
 is_fullscreen = True  # Default to fullscreen
@@ -151,7 +155,6 @@ def initialiser_ennemis(hopital, nombre_ennemis):
     ennemis = []
     cases_vides = [(j, i) for i, ligne in enumerate(hopital)
                    for j, case in enumerate(ligne) if case == " "]
-
     for _ in range(nombre_ennemis):
         if cases_vides:
             x, y = random.choice(cases_vides)
@@ -842,23 +845,21 @@ def dessiner_inventaire(surface):
     inventaire_y = hauteur - 70
     case_taille = 50
     espacement = 10
-    nombre_cases = 5  # Nombre total de cases dans l'inventaire
+    nombre_cases = 5
 
     # Dessiner les cases d'inventaire
-    for i in range(nombre_cases):  # Utiliser nombre_cases au lieu d'une valeur codée en dur
+    for i in range(nombre_cases):
         x = inventaire_x + (case_taille + espacement) * i
         rect = pygame.Rect(x, inventaire_y, case_taille, case_taille)
 
-        # Mettre en surbrillance la case sélectionnée
         if i == index_case_selectionnee:
-            # Case sélectionnée en gris
-            pygame.draw.rect(surface, (100, 100, 100), rect)
-            # Bordure blanche plus épaisse
-            pygame.draw.rect(surface, blanc, rect, 3)
+            # Case sélectionnée
+            pygame.draw.rect(surface, gris_clair, rect)
+            pygame.draw.rect(surface, blanc, rect, 3)  # Bordure blanche épaisse
         else:
-            # Cases non sélectionnées en gris foncé
-            pygame.draw.rect(surface, (50, 50, 50), rect)
-            pygame.draw.rect(surface, gris, rect, 1)  # Bordure grise fine
+            # Cases non sélectionnées
+            pygame.draw.rect(surface, gris_fonce, rect)
+            pygame.draw.rect(surface, gris, rect, 1)  # Bordure fine
 
 
 def afficher_parametres():
@@ -1188,14 +1189,23 @@ while running:
     barre_endurance_x = 10  # Position X de la barre
     barre_endurance_y = 10  # Position Y de la barre
     
-    # Dessiner le fond de la barre (rouge)
-    pygame.draw.rect(fenetre, (255, 0, 0), (barre_endurance_x, barre_endurance_y, 
+    # Couleurs pour la barre d'endurance
+    couleur_fond = (139, 0, 0)  # Rouge foncé pour le fond
+    couleur_endurance = (50, 205, 50)  # Vert clair pour l'endurance
+    couleur_bordure = (255, 255, 255)  # Blanc pour la bordure
+    
+    # Dessiner le fond de la barre
+    pygame.draw.rect(fenetre, couleur_fond, (barre_endurance_x, barre_endurance_y, 
                     barre_endurance_longueur, barre_endurance_hauteur))
     
-    # Dessiner la barre d'endurance (vert)
-    pygame.draw.rect(fenetre, (0, 255, 0), (barre_endurance_x, barre_endurance_y,
-                    barre_endurance_longueur * (endurance_actuelle / endurance_max), 
-                    barre_endurance_hauteur))
+    # Dessiner la barre d'endurance actuelle
+    longueur_actuelle = int(barre_endurance_longueur * (endurance_actuelle / endurance_max))
+    pygame.draw.rect(fenetre, couleur_endurance, (barre_endurance_x, barre_endurance_y,
+                    longueur_actuelle, barre_endurance_hauteur))
+
+    # Dessiner la bordure
+    pygame.draw.rect(fenetre, couleur_bordure, (barre_endurance_x, barre_endurance_y,
+                    barre_endurance_longueur, barre_endurance_hauteur), 2)
 
     # Collecte des clés
     if hopital[joueur_pos[1]][joueur_pos[0]] == "C":
@@ -1209,22 +1219,20 @@ while running:
     for ennemi in ennemis:
         x = ennemi.x * taille_case - camera_offset[0]
         y = ennemi.y * taille_case - camera_offset[1]
-
+        
         # Calculer la distance entre le joueur et l'ennemi
         dx = ennemi.x - joueur_pos[0]
         dy = ennemi.y - joueur_pos[1]
         distance = math.sqrt(dx*dx + dy*dy)
-
+        
         # Vérifier si l'ennemi est dans le cercle proche
         if distance * taille_case <= rayon_vision_proche:
             if not a_mur_entre(joueur_pos, (ennemi.x, ennemi.y), hopital):
-                pygame.draw.rect(fenetre, ennemis,
-                                 (x, y, taille_case, taille_case))
+                pygame.draw.rect(fenetre, ENNEMIES, (x, y, taille_case, taille_case))
         # Sinon, vérifier s'il est dans le cône de vision
         elif est_dans_cone(joueur_pos, (ennemi.x, ennemi.y), angle_de_vue, cone_longueur):
             if not a_mur_entre(joueur_pos, (ennemi.x, ennemi.y), hopital):
-                pygame.draw.rect(fenetre, ennemis,
-                                 (x, y, taille_case, taille_case))
+                pygame.draw.rect(fenetre, ENNEMIES, (x, y, taille_case, taille_case))
 
     # Victoire si le joueur atteint la sortie avec toutes les clés
     if hopital[joueur_pos[1]][joueur_pos[0]] == "S" and cles_collectees == nombre_cles:

@@ -3,15 +3,32 @@ import random
 import sys
 import math
 import os
+from screeninfo import get_monitors  # Ajouter cette importation
 
 # Initialisation de Pygame
 pygame.init()
 pygame.mixer.init()  # Initialize the mixer module
 
-# Dimensions de la fenêtre
-largeur = 1920  # Largeur de la fenêtre
-hauteur = 1080   # Hauteur de la fenêtre
-taille_case = 50  # Taille d'une case dans le labyrinthe
+# Détection de la résolution de l'écran
+try:
+    monitor = get_monitors()[0]  # Obtient le moniteur principal
+    largeur = monitor.width
+    hauteur = monitor.height
+except:
+    # Résolution par défaut si la détection échoue
+    largeur = 1920
+    hauteur = 1080
+
+# Ajuster la taille des cases en fonction de la résolution
+taille_case = int(min(largeur, hauteur) / 20)  # Ajuste la taille des cases proportionnellement
+
+# Recalculer les dimensions du labyrinthe en fonction de la résolution
+nombre_lignes = (hauteur // taille_case) * 8
+nombre_colonnes = (largeur // taille_case) * 8
+
+# Ajuster les paramètres de vision en fonction de la résolution
+rayon_vision_proche = taille_case * 2  # Ajuste le rayon de vision proche
+cone_longueur = min(largeur, hauteur) / 2  # Ajuste la longueur du cône de vision
 
 # Couleurs utilisées dans le jeu
 noir = (0, 0, 0)
@@ -45,14 +62,8 @@ vitesse_ennemis = 0.4  # Augmentation de la vitesse des ennemis
 
 # Paramètres de la vision
 cone_angle = 60  # Angle du cône de vision en degrés
-cone_longueur = 600  # Augmentation de la longueur du cône de vision (était 375)
-
-# Ajouter cette constante avec les autres paramètres de vision
-rayon_vision_proche = 100  # Rayon du cercle de vision autour du joueur
 
 # Génération initiale
-nombre_lignes = (hauteur // taille_case) * 8
-nombre_colonnes = (largeur // taille_case) * 8
 joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
 camera_offset = [0, 0]
 
@@ -69,13 +80,19 @@ dernier_mouvement = 0  # Pour suivre le temps du dernier mouvement
 # Ajouter une variable pour suivre l'index de la case sélectionnée
 index_case_selectionnee = 0
 
-# Ajouter ces variables pour les résolutions
-REsolUTIONS = [(800, 600), (1024, 768), (1280, 720), (1920, 1080)]
+# Mettre à jour la liste des résolutions disponibles
+REsolUTIONS = [
+    (1280, 720),
+    (1366, 768),
+    (1600, 900),
+    (1920, 1080),
+    (largeur, hauteur)  # Ajoute la résolution native
+]
 resolution_index = 0  # Index de la résolution sélectionnée
 
 # Add near the top of the file with other constants
-VIRTUAL_WIDTH = 1920  # Base resolution width
-VIRTUAL_HEIGHT = 1080  # Base resolution height
+VIRTUAL_WIDTH = largeur  # Base resolution width
+VIRTUAL_HEIGHT = hauteur  # Base resolution height
 
 # Add these constants near the top with other settings
 CROSSHAIR_SIZES = [3, 5, 7, 10]  # Different crosshair sizes
@@ -1086,6 +1103,13 @@ while running:
                 index_case_selectionnee = max(0, index_case_selectionnee - 1)
             elif event.button == 5:  # Mouse wheel down
                 index_case_selectionnee = min(4, index_case_selectionnee + 1)
+        if event.type == pygame.VIDEORESIZE and not is_fullscreen:
+            largeur, hauteur = event.size
+            fenetre = pygame.display.set_mode((largeur, hauteur), pygame.RESIZABLE)
+            hopital = redimensionner_jeu(largeur, hauteur)
+            # Réinitialiser la position du joueur et des ennemis
+            joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
+            ennemis = initialiser_ennemis(hopital, nombre_ennemis)
 
     # Obtenir la position de la souris
     souris_x, souris_y = pygame.mouse.get_pos()
@@ -1226,7 +1250,6 @@ while running:
     horloge.tick(60)  # Limiter à 60 FPS
 
 pygame.quit()
-
 
 
 #pip install screeninfo

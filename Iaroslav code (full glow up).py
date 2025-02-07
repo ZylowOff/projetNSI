@@ -124,12 +124,12 @@ class Ennemi:
         return True
 
 def musique_menu():
-    pygame.mixer.music.load("C:/Users/iaroslavlushcheko/Desktop/projet NSI/OST/S.T.A.L.K.E.R..mp3")
+    pygame.mixer.music.load("./assets/music/S.T.A.L.K.E.R..mp3")
     pygame.mixer.music.set_volume(0.5)
     pygame.mixer.music.play(-1)
 
 def musique_fond():
-    pygame.mixer.music.load("C:/Users/iaroslavlushcheko/Desktop/projet NSI/OST/Amnesia-02.mp3")
+    pygame.mixer.music.load("./assets/music/Amnesia-02.mp3")
     pygame.mixer.music.set_volume(0.5)
     pygame.mixer.music.play(-1)
 

@@ -684,8 +684,14 @@ def afficher_menu():
 def afficher_menu_pause():
     pygame.mouse.set_visible(True)  # Show cursor in pause menu
     global resolution_index, largeur, hauteur, fenetre
+    
+    # Load the background image
+    background = pygame.image.load("./assets/background/background_1.png")  # Ensure the path is correct
+    background = pygame.transform.scale(background, (largeur, hauteur))  # Scale to fit the window
+
     while True:
-        fenetre.fill(noir)
+        # Draw the background image instead of filling with black
+        fenetre.blit(background, (0, 0))
 
         # Title at the top
         titre = pygame.font.Font("./assets/font/November.ttf", 100).render("Echoes of the Hollow", True, blanc)
@@ -713,11 +719,11 @@ def afficher_menu_pause():
         button_gap = 120  # Consistent gap between buttons
         start_y = hauteur // 3  # Starting Y position moved up (was hauteur // 2 - 150)
         boutons = [
-            (pygame.Rect(largeur // 2 - 300, start_y, 650, 100), "Continuer", 60),
-            (pygame.Rect(largeur // 2 - 300, start_y + button_gap, 650, 100), "Recommencer", 60),
-            (pygame.Rect(largeur // 2 - 300, start_y + button_gap * 2, 650, 100), "Paramètres", 60),
-            (pygame.Rect(largeur // 2 - 300, start_y + button_gap * 3, 650, 100), "Menu Principal", 60),
-            (pygame.Rect(largeur // 2 - 300, start_y + button_gap * 4, 650, 100), "Quitter", 60),
+            (pygame.Rect(largeur // 2 - 250, start_y, 500, 90), "Continuer", 40),
+            (pygame.Rect(largeur // 2 - 250, start_y + button_gap, 500, 90), "Recommencer", 40),
+            (pygame.Rect(largeur // 2 - 250, start_y + button_gap * 2, 500, 90), "Paramètres", 40),
+            (pygame.Rect(largeur // 2 - 250, start_y + button_gap * 3, 500, 90), "Menu Principal", 40),
+            (pygame.Rect(largeur // 2 - 250, start_y + button_gap * 4, 500, 90), "Quitter", 40),
         ]
 
         souris_x, souris_y = pygame.mouse.get_pos()
@@ -733,6 +739,8 @@ def afficher_menu_pause():
             texte_rendu = pygame.font.Font("./assets/font/HelpMe.ttf", taille_texte).render(texte, True, blanc)
             fenetre.blit(texte_rendu, (bouton.centerx - texte_rendu.get_width() // 2,
                                       bouton.centery - texte_rendu.get_height() // 2))
+
+        pygame.display.flip()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -759,10 +767,7 @@ def afficher_menu_pause():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    pygame.mouse.set_visible(False)
-                    return "continuer"
-
-        pygame.display.flip()
+                    return
 
 # Placer cette fonction après les autres définitions de fonctions et avant la boucle principale
 

@@ -1250,6 +1250,3 @@ while running:
     horloge.tick(60)  # Limiter à 60 FPS
 
 pygame.quit()
-
-
-#pip install screeninfo

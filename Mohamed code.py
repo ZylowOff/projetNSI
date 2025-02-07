@@ -6,6 +6,7 @@ import os
 
 # Initialisation de Pygame
 pygame.init()
+pygame.mixer.init()  # Initialize the mixer module
 
 # Dimensions de la fenêtre
 largeur = 1920  # Largeur de la fenêtre
@@ -18,7 +19,7 @@ blanc = (255, 255, 255)
 gris = (200, 200, 200)
 # Load and scale player image
 joueur_img = pygame.image.load("./assets/characters/personnage.png")
-joueur = pygame.transform.scale(joueur_img, (taille_case * 2.5, taille_case * 2.5))  # Scale to tile size
+joueur = pygame.transform.scale(joueur_img, (taille_case * 1.25, taille_case * 1.25))  # Scale to tile size
 sortie = (0, 255, 0)
 mur = (100, 40, 30)
 sol = (115, 109, 115)
@@ -146,7 +147,6 @@ def deplacer_ennemis(hopital, ennemis, joueur_pos):
         elif ennemi.temps_memoire > 0:
             # L'ennemi ne voit plus le joueur mais se souvient de sa position
             ennemi.temps_memoire -= 1
-            # Légèrement plus lent pendant la poursuite de mémoire
             ennemi.vitesse_actuelle = ennemi.vitesse_normale * 0.7
         else:
             # L'ennemi a complètement perdu la trace du joueur
@@ -198,7 +198,7 @@ def deplacer_ennemis(hopital, ennemis, joueur_pos):
             else:
                 ennemi.direction = random.choice(
                     [(0, 1), (0, -1), (1, 0), (-1, 0)])
-                
+
 
 
 def verifier_collision_ennemis(joueur_pos, ennemis):
@@ -559,8 +559,8 @@ def afficher_credits():
                         glow_rect = glow.get_rect(center=(largeur // 2, current_y))
                         fenetre.blit(glow, (glow_rect.x + 2, glow_rect.y + 2))
                     
-                    fenetre.blit(texte, texte_rect)
-            
+            fenetre.blit(texte, texte_rect)
+
             # Use the actual spacing value from the tuple
             current_y += size if text == "" else 80
         
@@ -575,7 +575,7 @@ def afficher_credits():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return
-        
+
         # Automatic scroll
         y_offset -= SCROLL_SPEED
         
@@ -1019,7 +1019,7 @@ def afficher_parametres():
 
 
 def musique_menu():
-    pygame.mixer.music.load("./assets/music/S.T.A.L.K.E.R..mp3")
+    pygame.mixer.music.load("./assets/music/S.T.A.L.K.E.R..mp3")  # Ensure the path is correct
     pygame.mixer.music.set_volume(0.5)
     pygame.mixer.music.play(-1)
 

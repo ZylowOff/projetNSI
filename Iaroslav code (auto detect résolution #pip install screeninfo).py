@@ -9,6 +9,18 @@ from screeninfo import get_monitors  # Ajouter cette importation
 pygame.init()
 pygame.mixer.init()  # Initialize the mixer module
 
+# Charger les musiques
+try:
+    musique_poursuite = pygame.mixer.Sound("C:/Users/luiar/Downloads/projetNSI/OST/outlast_run.mp3")
+    musique_poursuite.set_volume(0.5)  # Ajuster le volume à 50%
+except:
+    musique_poursuite = None
+
+# Variables pour gérer l'état de la musique
+est_en_poursuite = False
+temps_perdu_vue = 0
+DELAI_ARRET_MUSIQUE = 2000  # 2000 millisecondes = 2 secondes
+
 # Détection de la résolution de l'écran
 try:
     monitor = get_monitors()[0]  # Obtient le moniteur principal
@@ -23,8 +35,8 @@ except:
 taille_case = int(min(largeur, hauteur) / 20)  # Ajuste la taille des cases proportionnellement
 
 # Recalculer les dimensions du labyrinthe en fonction de la résolution
-nombre_lignes = (hauteur // taille_case) * 2
-nombre_colonnes = (largeur // taille_case) * 2
+nombre_lignes = (hauteur // taille_case) * 8
+nombre_colonnes = (largeur // taille_case) * 8
 
 # Ajuster les paramètres de vision en fonction de la résolution
 rayon_vision_proche = taille_case * 2  # Ajuste le rayon de vision proche
@@ -59,10 +71,10 @@ pygame.display.set_caption("Echoes of the Hollow")
 horloge = pygame.time.Clock()
 
 # Paramètres de jeu
-nombre_cles = 3  # Nombre de clés à collecter pour gagner
-cles_collectees = 0  # Compteur de clés collectées
+nombre_cles = 3  
+cles_collectees = 0  
 nombre_ennemis = 5
-vitesse_ennemis = 0.4  # Augmentation de la vitesse des ennemis
+vitesse_ennemis = 0.6 
 
 # Paramètres de la vision
 cone_angle = 60  # Angle du cône de vision en degrés
@@ -112,6 +124,10 @@ taux_recuperation = 0.2  # Réduit pour une récupération plus lente
 delai_mouvement_normal = 100  # Délai en millisecondes pour le mouvement normal
 delai_mouvement_rapide = 40  # Délai en millisecondes pour le mouvement rapide
 
+# Au début du fichier, avec les autres constantes
+VITESSE_ENNEMIE_LENTE = 0.15  # Vitesse de patrouille (très lente)
+VITESSE_ENNEMIE_POURSUITE = 0.4  # Vitesse de poursuite (plus rapide mais moins que le joueur)
+
 class Ennemi:
     def __init__(self, x, y):
         self.x = x
@@ -120,13 +136,17 @@ class Ennemi:
         self.compteur_deplacement = 0
         self.cone_vision = 8
         self.angle_vision = 120
-        self.vitesse_normale = vitesse_ennemis
-        self.vitesse_lente = vitesse_ennemis * 0.3
-        self.vitesse_actuelle = self.vitesse_lente
-        # Nouvelles variables pour la mémoire
+        # Nouvelles vitesses
+        self.vitesse_patrouille = VITESSE_ENNEMIE_LENTE
+        self.vitesse_poursuite = VITESSE_ENNEMIE_POURSUITE
+        self.vitesse_actuelle = self.vitesse_patrouille
+        # Variables pour la mémoire
         self.derniere_pos_joueur = None
         self.temps_memoire = 0
-        self.duree_memoire_max = 180  # Environ 3 secondes à 60 FPS
+        self.duree_memoire_max = 180
+        # Variables pour la patrouille
+        self.pas_patrouille = 0
+        self.max_pas_patrouille = random.randint(5, 10)
 
     def peut_voir_joueur(self, joueur_pos, hopital):
         # Calculer la distance entre l'ennemi et le joueur
@@ -164,69 +184,85 @@ def initialiser_ennemis(hopital, nombre_ennemis):
 
 
 def deplacer_ennemis(hopital, ennemis, joueur_pos):
+    global est_en_poursuite, temps_perdu_vue
+    joueur_est_vu = False
+    temps_actuel = pygame.time.get_ticks()
+    
     for ennemi in ennemis:
         voit_joueur = ennemi.peut_voir_joueur(joueur_pos, hopital)
-
+        
         if voit_joueur:
-            # Mettre à jour la dernière position connue du joueur
+            joueur_est_vu = True
+            temps_perdu_vue = 0  # Réinitialiser le compteur
+            # Mode poursuite - vitesse plus rapide
+            ennemi.vitesse_actuelle = ennemi.vitesse_poursuite
             ennemi.derniere_pos_joueur = joueur_pos[:]
             ennemi.temps_memoire = ennemi.duree_memoire_max
-            ennemi.vitesse_actuelle = ennemi.vitesse_normale
-        elif ennemi.temps_memoire > 0:
-            # L'ennemi ne voit plus le joueur mais se souvient de sa position
-            ennemi.temps_memoire -= 1
-            ennemi.vitesse_actuelle = ennemi.vitesse_normale * 0.7
-        else:
-            # L'ennemi a complètement perdu la trace du joueur
-            ennemi.derniere_pos_joueur = None
-            ennemi.vitesse_actuelle = ennemi.vitesse_lente
-
-        ennemi.compteur_deplacement += ennemi.vitesse_actuelle
-        if ennemi.compteur_deplacement >= 1:
-            ennemi.compteur_deplacement = 0
-
-            if voit_joueur:
-                cible = joueur_pos
-            elif ennemi.derniere_pos_joueur is not None and ennemi.temps_memoire > 0:
-                cible = ennemi.derniere_pos_joueur
-            else:
-                continue  # Skip this iteration if no valid target
-
-            dx = cible[0] - ennemi.x
-            dy = cible[1] - ennemi.y
-
-            if abs(dx) > abs(dy):
-                nouveau_x = ennemi.x + (1 if dx > 0 else -1)
-                nouveau_y = ennemi.y
-                if not deplacement_valide(hopital, [nouveau_x, nouveau_y]):
-                    nouveau_x = ennemi.x
-                    nouveau_y = ennemi.y + (1 if dy > 0 else -1)
-            else:
-                nouveau_y = ennemi.y + (1 if dy > 0 else -1)
-                nouveau_x = ennemi.x
-                if not deplacement_valide(hopital, [nouveau_x, nouveau_y]):
+            
+            ennemi.compteur_deplacement += ennemi.vitesse_actuelle
+            if ennemi.compteur_deplacement >= 1:
+                ennemi.compteur_deplacement = 0
+                
+                # Déplacement vers le joueur
+                dx = joueur_pos[0] - ennemi.x
+                dy = joueur_pos[1] - ennemi.y
+                
+                if abs(dx) > abs(dy):
                     nouveau_x = ennemi.x + (1 if dx > 0 else -1)
                     nouveau_y = ennemi.y
+                else:
+                    nouveau_x = ennemi.x
+                    nouveau_y = ennemi.y + (1 if dy > 0 else -1)
+                    
+                if deplacement_valide(hopital, [nouveau_x, nouveau_y]):
+                    ennemi.x = nouveau_x
+                    ennemi.y = nouveau_y
+                
+        else:
+            # Mode patrouille - vitesse lente
+            ennemi.vitesse_actuelle = ennemi.vitesse_patrouille
+            ennemi.compteur_deplacement += ennemi.vitesse_actuelle
+            
+            if ennemi.compteur_deplacement >= 1:
+                ennemi.compteur_deplacement = 0
+                
+                # Déplacement dans la direction actuelle
+                nouveau_x = ennemi.x + ennemi.direction[0]
+                nouveau_y = ennemi.y + ennemi.direction[1]
+                
+                if deplacement_valide(hopital, [nouveau_x, nouveau_y]):
+                    ennemi.x = nouveau_x
+                    ennemi.y = nouveau_y
+                    ennemi.pas_patrouille += 1
+                    
+                    # Changer de direction après un certain nombre de pas
+                    if ennemi.pas_patrouille >= ennemi.max_pas_patrouille:
+                        ennemi.direction = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+                        ennemi.pas_patrouille = 0
+                        ennemi.max_pas_patrouille = random.randint(5, 10)
+                else:
+                    # Si bloqué, changer de direction
+                    ennemi.direction = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+                    ennemi.pas_patrouille = 0
 
-            # Si l'ennemi atteint la dernière position connue et ne voit pas le joueur
-            if not voit_joueur and ennemi.derniere_pos_joueur:
-                if abs(ennemi.x - ennemi.derniere_pos_joueur[0]) <= 1 and \
-                   abs(ennemi.y - ennemi.derniere_pos_joueur[1]) <= 1:
-                    ennemi.temps_memoire = 0  # Arrêter la poursuite
-                    ennemi.derniere_pos_joueur = None
-            else:
-                # Comportement aléatoire plus lent
-                if random.random() < 0.05:
-                    ennemi.direction = random.choice(
-                        [(0, 1), (0, -1), (1, 0), (-1, 0)])
-
-            if deplacement_valide(hopital, [nouveau_x, nouveau_y]):
-                ennemi.x = nouveau_x
-                ennemi.y = nouveau_y
-            else:
-                ennemi.direction = random.choice(
-                    [(0, 1), (0, -1), (1, 0), (-1, 0)])
-
+    # Gestion de la musique de poursuite
+    if joueur_est_vu:
+        if not est_en_poursuite and musique_poursuite:
+            pygame.mixer.music.pause()  # Pause la musique de fond
+            musique_poursuite.play(-1)  # -1 pour jouer en boucle
+        est_en_poursuite = True
+        temps_perdu_vue = 0
+    elif est_en_poursuite:
+        if temps_perdu_vue == 0:
+            # Premier moment où le joueur n'est plus vu
+            temps_perdu_vue = temps_actuel
+        elif temps_actuel - temps_perdu_vue >= DELAI_ARRET_MUSIQUE:
+            # Arrêter la musique seulement après le délai
+            if musique_poursuite:
+                musique_poursuite.fadeout(1000)  # Fade out sur 1 seconde
+                pygame.mixer.music.unpause()  # Reprend la musique de fond
+            est_en_poursuite = False
+            temps_perdu_vue = 0
 
 
 def verifier_collision_ennemis(joueur_pos, ennemis):
@@ -238,7 +274,7 @@ def verifier_collision_ennemis(joueur_pos, ennemis):
 
 
 def game_over():
-    arreter_musique()  # Stop current music
+    arreter_musiques()  # Stop current music
     musique_menu()  # Start menu music
     fenetre.fill(noir)
     texte = pygame.font.Font(None, 60).render("Game Over!", True, blanc)
@@ -523,7 +559,7 @@ def deplacement_valide(hopital, pos):
 
 
 def afficher_victoire():
-    arreter_musique()  # Stop game music
+    arreter_musiques()  # Stop game music
     fenetre.fill(noir)
     texte = pygame.font.Font(None, 60).render("Victoire !", True, blanc)
     texte_rect = texte.get_rect(center=(largeur // 2, hauteur // 2))
@@ -1061,8 +1097,13 @@ def musique_fond():
     pygame.mixer.music.play(-1)
 
 
-def arreter_musique():
-    pygame.mixer.music.stop()
+def arreter_musiques():
+    global est_en_poursuite, temps_perdu_vue
+    if musique_poursuite:
+        musique_poursuite.stop()
+    pygame.mixer.stop()
+    est_en_poursuite = False
+    temps_perdu_vue = 0
 
 
 # Génération objet
@@ -1090,6 +1131,8 @@ while running:
                     joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
                     cles_collectees = 0
                     ennemis = initialiser_ennemis(hopital, nombre_ennemis)
+                    arreter_musiques()  # Arrêter toutes les musiques
+                    musique_fond()  # Relancer la musique de fond du jeu
                 elif choix == "menu":
                     # Réinitialiser le jeu
                     hopital = generer_hopital(nombre_lignes, nombre_colonnes)
@@ -1099,6 +1142,8 @@ while running:
                     ennemis = initialiser_ennemis(hopital, nombre_ennemis)
                     # Retourner au menu
                     afficher_menu()
+                    arreter_musiques()  # Arrêter la musique du menu
+                    musique_fond()  # Démarrer la musique du jeu
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 4:  # Mouse wheel up
                 index_case_selectionnee = max(0, index_case_selectionnee - 1)
@@ -1176,6 +1221,8 @@ while running:
             ennemis = initialiser_ennemis(hopital, nombre_ennemis)
             # Retourner au menu
             afficher_menu()
+            arreter_musiques()  # Arrêter la musique du menu
+            musique_fond()  # Démarrer la musique du jeu
 
     # Dessiner l'hôpital
     dessiner_hopital(hopital, joueur_pos, camera_offset)
@@ -1236,7 +1283,7 @@ while running:
 
     # Victoire si le joueur atteint la sortie avec toutes les clés
     if hopital[joueur_pos[1]][joueur_pos[0]] == "S" and cles_collectees == nombre_cles:
-        arreter_musique()  # Stop game music
+        arreter_musiques()
         afficher_victoire()
         running = False
 

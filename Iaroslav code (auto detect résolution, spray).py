@@ -50,6 +50,8 @@ gris_fonce = (50, 50, 50)  # Pour les cases non sélectionnées
 gris_clair = (150, 150, 150)  # Pour la case sélectionnée
 bordeaux = (40, 0, 0)
 ENNEMIES = (255, 0, 0)  # Rouge pour les ennemis
+spray = (255, 165, 0)  # Couleur orange pour le spray au poivre
+marron_spray = (139, 69, 19, 100)  # Marron avec transparence
 
 # Load and scale player image
 joueur_img = pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/personnage.png")
@@ -128,6 +130,15 @@ delai_mouvement_rapide = 40  # Délai en millisecondes pour le mouvement rapide
 VITESSE_ENNEMIE_LENTE = 0.15  # Vitesse de patrouille (très lente)
 VITESSE_ENNEMIE_POURSUITE = 0.4  # Vitesse de poursuite (plus rapide mais moins que le joueur)
 
+# Ajouter aux paramètres de jeu
+nombre_sprays = 2  # Nombre de sprays sur la map
+sprays_collectes = 0  # Compteur de sprays dans l'inventaire
+
+# Ajouter aux variables globales au début du fichier
+spray_actif = False
+temps_spray = 0
+DUREE_AFFICHAGE_SPRAY = 500  # Durée d'affichage du spray en millisecondes
+
 class Ennemi:
     def __init__(self, x, y):
         self.x = x
@@ -147,6 +158,9 @@ class Ennemi:
         # Variables pour la patrouille
         self.pas_patrouille = 0
         self.max_pas_patrouille = random.randint(5, 10)
+        self.ralenti = False
+        self.temps_ralenti = 0
+        self.vitesse_ralentie = VITESSE_ENNEMIE_LENTE * 0.5  # 50% plus lent
 
     def peut_voir_joueur(self, joueur_pos, hopital):
         # Calculer la distance entre l'ennemi et le joueur
@@ -189,12 +203,22 @@ def deplacer_ennemis(hopital, ennemis, joueur_pos):
     temps_actuel = pygame.time.get_ticks()
     
     for ennemi in ennemis:
+        temps_actuel = pygame.time.get_ticks()
+        
+        # Gérer l'effet de ralentissement
+        if ennemi.ralenti:
+            if temps_actuel - ennemi.temps_ralenti >= 3000:  # 3 secondes
+                ennemi.ralenti = False
+                # Réinitialiser la vitesse normale
+                ennemi.vitesse_actuelle = ennemi.vitesse_patrouille
+            else:
+                ennemi.vitesse_actuelle = 0.1  # Vitesse fixée à 0.1 quand ralenti
+        
         voit_joueur = ennemi.peut_voir_joueur(joueur_pos, hopital)
         
-        if voit_joueur:
+        if voit_joueur and not ennemi.ralenti:  # Ne change la vitesse que si pas ralenti
             joueur_est_vu = True
-            temps_perdu_vue = 0  # Réinitialiser le compteur
-            # Mode poursuite - vitesse plus rapide
+            temps_perdu_vue = 0
             ennemi.vitesse_actuelle = ennemi.vitesse_poursuite
             ennemi.derniere_pos_joueur = joueur_pos[:]
             ennemi.temps_memoire = ennemi.duree_memoire_max
@@ -218,8 +242,7 @@ def deplacer_ennemis(hopital, ennemis, joueur_pos):
                     ennemi.x = nouveau_x
                     ennemi.y = nouveau_y
                 
-        else:
-            # Mode patrouille - vitesse lente
+        elif not ennemi.ralenti:  # Ne change la vitesse que si pas ralenti
             ennemi.vitesse_actuelle = ennemi.vitesse_patrouille
             ennemi.compteur_deplacement += ennemi.vitesse_actuelle
             
@@ -511,10 +534,15 @@ def dessiner_hopital(hopital, joueur_pos, camera_offset):
         y = i * taille_case - cam_y
         for j in range(debut_x, fin_x):
             case = hopital[i][j]
-            if case in ["S", "C"]:  # Exclure "Y" car les ennemis sont gérés séparément
+            if case in ["S", "C", "P"]:  # P pour Pepper spray
                 if est_visible(joueur_pos, (j, i), hopital):
                     x = j * taille_case - cam_x
-                    couleur = sortie if case == "S" else cle
+                    if case == "S":
+                        couleur = sortie  # Vert pour la sortie
+                    elif case == "C":
+                        couleur = cle  # Jaune pour les clés
+                    elif case == "P":
+                        couleur = spray  # Orange pour le spray
                     pygame.draw.rect(virtual_surface, couleur,
                                      (x, y, taille_case, taille_case))
 
@@ -559,7 +587,7 @@ def deplacement_valide(hopital, pos):
 
 
 def afficher_victoire():
-    arreter_musiques()  # Stop game music
+    arreter_musiques()
     fenetre.fill(noir)
     texte = pygame.font.Font(None, 60).render("Victoire !", True, blanc)
     texte_rect = texte.get_rect(center=(largeur // 2, hauteur // 2))
@@ -877,25 +905,25 @@ def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
 
 def dessiner_inventaire(surface):
     # Position et taille de l'inventaire
-    inventaire_x = 30
-    inventaire_y = hauteur - 70
+    inv_x = 20  # Position à gauche
+    inv_y = hauteur - 70  # Position en bas
     case_taille = 50
     espacement = 10
-    nombre_cases = 5
-
-    # Dessiner les cases d'inventaire
-    for i in range(nombre_cases):
-        x = inventaire_x + (case_taille + espacement) * i
-        rect = pygame.Rect(x, inventaire_y, case_taille, case_taille)
-
+    
+    # Dessiner les cases d'inventaire horizontalement
+    for i in range(5):  # 5 cases d'inventaire
+        x = inv_x + (case_taille + espacement) * i  # Déplacement horizontal
+        pygame.draw.rect(surface, gris_fonce, (x, inv_y, case_taille, case_taille))
         if i == index_case_selectionnee:
-            # Case sélectionnée
-            pygame.draw.rect(surface, gris_clair, rect)
-            pygame.draw.rect(surface, blanc, rect, 3)  # Bordure blanche épaisse
+            pygame.draw.rect(surface, gris_clair, (x, inv_y, case_taille, case_taille), 2)
         else:
-            # Cases non sélectionnées
-            pygame.draw.rect(surface, gris_fonce, rect)
-            pygame.draw.rect(surface, gris, rect, 1)  # Bordure fine
+            pygame.draw.rect(surface, gris, (x, inv_y, case_taille, case_taille), 1)
+        
+        # Afficher les sprays dans l'inventaire
+        if i == 0 and sprays_collectes > 0:
+            pygame.draw.rect(surface, spray, (x + 5, inv_y + 5, case_taille - 10, case_taille - 10))
+            texte = pygame.font.Font(None, 20).render(str(sprays_collectes), True, blanc)
+            surface.blit(texte, (x + case_taille - 15, inv_y + case_taille - 15))
 
 
 def afficher_parametres():
@@ -1106,10 +1134,96 @@ def arreter_musiques():
     temps_perdu_vue = 0
 
 
-# Génération objet
+def placer_sprays(hopital, nombre_sprays):
+    cases_vides = [(j, i) for i, ligne in enumerate(hopital)
+                   for j, case in enumerate(ligne) if case == " "]
+    for _ in range(nombre_sprays):
+        if cases_vides:
+            x, y = random.choice(cases_vides)
+            hopital[y][x] = "P"  # P pour Pepper spray au lieu de S
+            cases_vides.remove((x, y))
+
+def redimensionner_jeu(nouvelle_largeur, nouvelle_hauteur):
+    global largeur, hauteur, taille_case, nombre_lignes, nombre_colonnes
+    
+    # Mettre à jour les dimensions de la fenêtre
+    largeur = nouvelle_largeur
+    hauteur = nouvelle_hauteur
+    
+    # Recalculer la taille des cases
+    taille_case = int(min(largeur, hauteur) / 20)
+    
+    # Recalculer les dimensions du labyrinthe
+    nombre_lignes = (hauteur // taille_case) * 2
+    nombre_colonnes = (largeur // taille_case) * 2
+    
+    # Générer un nouveau labyrinthe avec les nouvelles dimensions
+    nouveau_hopital = generer_hopital(nombre_lignes, nombre_colonnes)
+    
+    # Replacer les objets dans le nouveau labyrinthe
+    placer_cles(nouveau_hopital, nombre_cles)
+    placer_sprays(nouveau_hopital, nombre_sprays)
+    
+    return nouveau_hopital
+
+# Ensuite, la génération des objets
 hopital = generer_hopital(nombre_lignes, nombre_colonnes)
 cles = placer_cles(hopital, nombre_cles)
+placer_sprays(hopital, nombre_sprays)
 ennemis = initialiser_ennemis(hopital, nombre_ennemis)
+
+# Placer après les autres définitions de fonctions (comme deplacer_ennemis, verifier_collision_ennemis, etc.)
+# et avant la boucle principale du jeu
+
+def dessiner_cone_spray(surface, position, angle, length):
+    masque = pygame.Surface((largeur, hauteur), pygame.SRCALPHA)
+    
+    x, y = position
+    angle_spray = 30  # Angle du cône plus fin (30 degrés)
+    start_angle = math.radians(angle - angle_spray / 2)
+    end_angle = math.radians(angle + angle_spray / 2)
+
+    # Points pour le polygone du spray
+    points = [(x, y)]  # Point de départ (position du joueur)
+
+    # Pour chaque rayon du cône
+    steps = 180  # Plus de précision pour un rendu plus lisse
+    for i in range(steps + 1):
+        theta = start_angle + i * (end_angle - start_angle) / steps
+        ray_x = x + length * math.cos(theta)
+        ray_y = y + length * math.sin(theta)
+        points.append((ray_x, ray_y))
+
+    # Dessiner le polygone du spray
+    if len(points) > 2:
+        pygame.draw.polygon(masque, marron_spray, points)
+
+    # Appliquer le masque sur l'écran
+    surface.blit(masque, (0, 0))
+
+def utiliser_spray(joueur_pos, angle_de_vue, ennemis, hopital):
+    global sprays_collectes, spray_actif, temps_spray
+    if sprays_collectes <= 0:
+        return
+    
+    spray_actif = True
+    temps_spray = pygame.time.get_ticks()
+    
+    # Paramètres du cône de spray
+    portee_spray = 5 * taille_case  # Portée du spray en pixels
+    
+    # Pour chaque ennemi
+    for ennemi in ennemis:
+        # Vérifier si l'ennemi est dans le cône
+        if est_dans_cone(joueur_pos, (ennemi.x, ennemi.y), angle_de_vue, portee_spray):
+            # Vérifier s'il n'y a pas de mur entre le joueur et l'ennemi
+            if not a_mur_entre(joueur_pos, (ennemi.x, ennemi.y), hopital):
+                # Ralentir l'ennemi
+                ennemi.ralenti = True
+                ennemi.temps_ralenti = pygame.time.get_ticks()
+                ennemi.vitesse_actuelle = 0.1  # Vitesse ralentie fixée à 0.1
+    
+    sprays_collectes -= 1
 
 # Boucle principale
 afficher_menu()
@@ -1128,6 +1242,8 @@ while running:
                 if choix == "recommencer":
                     hopital = generer_hopital(nombre_lignes, nombre_colonnes)
                     cles = placer_cles(hopital, nombre_cles)
+                    placer_sprays(hopital, nombre_sprays)
+                    bandages_collectes = 0  # Réinitialiser le compteur
                     joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
                     cles_collectees = 0
                     ennemis = initialiser_ennemis(hopital, nombre_ennemis)
@@ -1137,6 +1253,7 @@ while running:
                     # Réinitialiser le jeu
                     hopital = generer_hopital(nombre_lignes, nombre_colonnes)
                     cles = placer_cles(hopital, nombre_cles)
+                    placer_sprays(hopital, nombre_sprays)
                     joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
                     cles_collectees = 0
                     ennemis = initialiser_ennemis(hopital, nombre_ennemis)
@@ -1149,6 +1266,8 @@ while running:
                 index_case_selectionnee = max(0, index_case_selectionnee - 1)
             elif event.button == 5:  # Mouse wheel down
                 index_case_selectionnee = min(4, index_case_selectionnee + 1)
+            if event.button == 1:  # Clic gauche
+                utiliser_spray(joueur_pos, angle_de_vue, ennemis, hopital)
         if event.type == pygame.VIDEORESIZE and not is_fullscreen:
             largeur, hauteur = event.size
             fenetre = pygame.display.set_mode((largeur, hauteur), pygame.RESIZABLE)
@@ -1216,6 +1335,7 @@ while running:
             # Réinitialiser le jeu
             hopital = generer_hopital(nombre_lignes, nombre_colonnes)
             cles = placer_cles(hopital, nombre_cles)
+            placer_sprays(hopital, nombre_sprays)
             joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
             cles_collectees = 0
             ennemis = initialiser_ennemis(hopital, nombre_ennemis)
@@ -1259,6 +1379,11 @@ while running:
         cles_collectees += 1
         hopital[joueur_pos[1]][joueur_pos[0]] = " "
 
+    # Collecte du spray
+    if hopital[joueur_pos[1]][joueur_pos[0]] == "P":  # P pour Pepper spray
+        sprays_collectes += 1
+        hopital[joueur_pos[1]][joueur_pos[0]] = " "
+
     # Déplacer les ennemis
     deplacer_ennemis(hopital, ennemis, joueur_pos)
 
@@ -1300,6 +1425,17 @@ while running:
             pygame.draw.line(fenetre, blanc, (mouse_x, mouse_y - size), (mouse_x, mouse_y + size))
         elif CROSSHAIR_STYLES[crosshair_style_index] == "Point":
             pygame.draw.circle(fenetre, blanc, (mouse_x, mouse_y), size)
+
+    # Après avoir dessiné le labyrinthe et avant d'afficher l'interface
+    if spray_actif:
+        temps_actuel = pygame.time.get_ticks()
+        if temps_actuel - temps_spray < DUREE_AFFICHAGE_SPRAY:
+            # Calculer la position du joueur à l'écran
+            joueur_ecran_x = joueur_pos[0] * taille_case - camera_offset[0] + taille_case // 2
+            joueur_ecran_y = joueur_pos[1] * taille_case - camera_offset[1] + taille_case // 2
+            dessiner_cone_spray(fenetre, (joueur_ecran_x, joueur_ecran_y), angle_de_vue, 5 * taille_case)
+        else:
+            spray_actif = False
 
     pygame.display.flip()
     horloge.tick(60)  # Limiter à 60 FPS

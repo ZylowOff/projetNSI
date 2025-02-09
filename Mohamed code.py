@@ -83,6 +83,16 @@ CROSSHAIR_STYLES = ["Croix", "Point", "Aucun"]  # Different crosshair styles
 crosshair_size_index = 1  # Default to second size (5)
 crosshair_style_index = 0  # Default to Cross
 
+# Add this variable near the top with other settings
+show_fps = False  # Default to not showing FPS
+
+# Add this variable near the top with other settings
+CROSSHAIR_THICKNESSES = [1, 2, 3, 4, 5]  # Different crosshair thicknesses
+crosshair_thickness_index = 1  # Default to second thickness (2)
+
+# Add this variable near the top with other settings
+volume = 0.5  # Default volume level
+
 class Ennemi:
     def __init__(self, x, y):
         self.x = x
@@ -429,9 +439,10 @@ def dessiner_hopital(hopital, joueur_pos, camera_offset):
         y = i * taille_case - cam_y
         for j in range(debut_x, fin_x):
             x = j * taille_case - cam_x
-            couleur = mur if hopital[i][j] == "#" else sol
-            pygame.draw.rect(temp_surface, couleur,
-                             (x, y, taille_case, taille_case))
+            if hopital[i][j] == "#":
+                pygame.draw.rect(temp_surface, mur, (x, y, taille_case, taille_case))
+            else:
+                pygame.draw.rect(temp_surface, sol, (x, y, taille_case, taille_case))
 
     virtual_surface.blit(temp_surface, (0, 0))
 
@@ -451,8 +462,7 @@ def dessiner_hopital(hopital, joueur_pos, camera_offset):
                 if est_visible(joueur_pos, (j, i), hopital):
                     x = j * taille_case - cam_x
                     couleur = sortie if case == "S" else cle
-                    pygame.draw.rect(virtual_surface, couleur,
-                                     (x, y, taille_case, taille_case))
+                    pygame.draw.rect(virtual_surface, couleur, (x, y, taille_case, taille_case))
 
     # Dessiner le joueur
     if joueur:
@@ -790,8 +800,8 @@ def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
 
     # Dessiner l'icône de clé
     icone_cle = pygame.Rect(
-        largeur - (marge + taille_icone),
-        marge + 5,
+        fond_rect.x + 5,
+        fond_rect.y + (fond_rect.height - taille_icone) // 2,
         taille_icone,
         taille_icone
     )
@@ -801,12 +811,12 @@ def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
     texte = f"{cles_collectees}/{nombre_cles_total}"
     police = pygame.font.Font(None, 36)
     surface_texte = police.render(texte, True, blanc)
-    pos_texte = (
-        largeur - (marge + taille_icone + espacement +
-                   surface_texte.get_width()),
-        marge + 8
-    )
-    surface.blit(surface_texte, pos_texte)
+
+    # Calculer la position centrée du texte
+    pos_texte_x = icone_cle.right + espacement
+    pos_texte_y = fond_rect.y + (fond_rect.height - surface_texte.get_height()) // 2
+
+    surface.blit(surface_texte, (pos_texte_x, pos_texte_y))
 
 # Modifier la fonction pour dessiner l'inventaire
 
@@ -837,36 +847,60 @@ def dessiner_inventaire(surface):
 
 
 def afficher_parametres():
-    global resolution_index, largeur, hauteur, fenetre, crosshair_size_index, crosshair_style_index, is_fullscreen
+    global resolution_index, largeur, hauteur, fenetre, crosshair_size_index, crosshair_style_index, crosshair_thickness_index, is_fullscreen, show_fps, volume
     
-    selected_section = 0  # 0 = Display, 1 = Crosshair
-    sections = ["Affichage", "Réticule"]
+    selected_section = 0  # 0 = Display, 1 = Crosshair, 2 = Sound
+    sections = ["Affichage", "Réticule", "Son"]
     
     # Add these variables at the start of the function
     slider_rect = pygame.Rect(0, 0, 200, 10)
     slider_pos = CROSSHAIR_SIZES[crosshair_size_index]
+    thickness_slider_rect = pygame.Rect(0, 0, 200, 10)  # Define thickness_slider_rect here
+    thickness_slider_pos = CROSSHAIR_THICKNESSES[crosshair_thickness_index]
+    volume_slider_rect = pygame.Rect(0, 0, 200, 10)  # Define volume_slider_rect here
+    volume_slider_pos = volume * 100  # Convert volume to percentage
     typing_active = False
     text_input = str(slider_pos)
+    thickness_text_input = str(thickness_slider_pos)
+    volume_text_input = str(int(volume_slider_pos))
     dragging_slider = False  # Initialize dragging_slider variable
+    dragging_thickness_slider = False  # Initialize dragging_thickness_slider variable
+    dragging_volume_slider = False  # Initialize dragging_volume_slider variable
     
     while True:
         fenetre.fill(noir)
         center_x = largeur // 2  # Move this line here, before any section checks
 
+        bouton_retour = pygame.Rect(20, 20, 200, 60)  # Made wider again to fit text
+        if bouton_retour.collidepoint(pygame.mouse.get_pos()):
+            couleur_retour = (255, 0, 0)
+            bouton_retour = bouton_retour.inflate(20, 20)
+        else:
+            couleur_retour = bordeaux
+        bords_arrondis(fenetre, couleur_retour, bouton_retour, 15)
+        
+        # Draw arrow and text separately
+        texte_arrow = pygame.font.Font("./assets/font/Arrows.ttf", 40).render("R", True, blanc)
+        texte_retour = pygame.font.Font("./assets/font/HelpMe.ttf", 30).render("Retour", True, blanc)
+        
+        # Position arrow and text
+        fenetre.blit(texte_arrow, (bouton_retour.x + 15, bouton_retour.centery - texte_arrow.get_height() // 2))
+        fenetre.blit(texte_retour, (bouton_retour.x + 45, bouton_retour.centery - texte_retour.get_height() // 2))
+
         # Center sections at the top
         section_total_width = sum([200 for _ in sections])
         section_start_x = (largeur - section_total_width) // 2
 
-        # Draw sections at the top
+        # Draw sections at the top, lowered by 100 pixels
         for i, section in enumerate(sections):
             color = blanc if i == selected_section else gris
             texte = pygame.font.Font(None, 40).render(section, True, color)
-            text_rect = texte.get_rect(center=(section_start_x + i * 200 + 100, 50))
+            text_rect = texte.get_rect(center=(section_start_x + i * 200 + 100, 150))
             fenetre.blit(texte, text_rect)
 
         # Display Settings Section
         if selected_section == 0:
-            # Resolutions list
+            # Resolutions list, lowered by 100 pixels
             for i, (width, height) in enumerate(REsolUTIONS):
                 resolution_texte = f"{width} x {height}"
                 if is_fullscreen:
@@ -874,14 +908,21 @@ def afficher_parametres():
                 else:
                     color = blanc if i == resolution_index else gris
                 texte = pygame.font.Font(None, 40).render(resolution_texte, True, color)
-                text_rect = texte.get_rect(center=(largeur // 2, 150 + i * 50))
+                text_rect = texte.get_rect(center=(largeur // 2, 250 + i * 50))
                 fenetre.blit(texte, text_rect)
             
-            # Fullscreen toggle
+            # Fullscreen toggle, lowered by 100 pixels
             fullscreen_text = "Plein écran: " + ("Oui" if is_fullscreen else "Non")
             color = blanc if is_fullscreen else gris
             texte = pygame.font.Font(None, 40).render(fullscreen_text, True, color)
-            text_rect = texte.get_rect(center=(largeur // 2, 150 + len(REsolUTIONS) * 50))
+            text_rect = texte.get_rect(center=(largeur // 2, 250 + len(REsolUTIONS) * 50))
+            fenetre.blit(texte, text_rect)
+            
+            # FPS counter toggle, lowered by 100 pixels
+            fps_text = "Afficher les FPS: " + ("Oui" if show_fps else "Non")
+            color = blanc if show_fps else gris
+            texte = pygame.font.Font(None, 40).render(fps_text, True, color)
+            text_rect = texte.get_rect(center=(largeur // 2, 250 + (len(REsolUTIONS) + 1) * 50))
             fenetre.blit(texte, text_rect)
 
         # Crosshair Settings Section
@@ -889,14 +930,14 @@ def afficher_parametres():
             center_x = largeur // 2
             preview_x = center_x
 
-            # Draw "Taille" text and controls
+            # Draw "Taille" text and controls, lowered by 100 pixels
             texte = pygame.font.Font(None, 40).render("Taille:", True, blanc)
-            text_rect = texte.get_rect(center=(center_x - 150, 150))
+            text_rect = texte.get_rect(center=(center_x - 150, 250))
             fenetre.blit(texte, text_rect)
 
-            # Draw slider (grayed out if "Aucun" is selected)
+            # Draw slider (grayed out if "Aucun" is selected), lowered by 100 pixels
             slider_rect.centerx = center_x
-            slider_rect.centery = 150
+            slider_rect.centery = 300  # Move slider below the text
             slider_color = (50, 50, 50) if CROSSHAIR_STYLES[crosshair_style_index] == "Aucun" else gris
             pygame.draw.rect(fenetre, slider_color, slider_rect)
             
@@ -905,31 +946,52 @@ def afficher_parametres():
             if CROSSHAIR_STYLES[crosshair_style_index] != "Aucun":
                 pygame.draw.circle(fenetre, blanc, (handle_pos, slider_rect.centery), 8)
             
-            # Draw text input (without border)
+            # Draw text input (without border), lowered by 100 pixels
             font = pygame.font.Font(None, 40)
             text_surface = font.render(text_input, True, blanc if CROSSHAIR_STYLES[crosshair_style_index] != "Aucun" else (50, 50, 50))
-            text_rect = text_surface.get_rect(center=(center_x + 150, 150))
+            text_rect = text_surface.get_rect(center=(center_x + 150, 300))
             fenetre.blit(text_surface, text_rect)
 
-            # Draw "Style" text and styles
+            # Draw "Épaisseur" text and controls, lowered by 100 pixels
+            thickness_texte = pygame.font.Font(None, 40).render("Épaisseur:", True, blanc)
+            thickness_text_rect = thickness_texte.get_rect(center=(center_x - 150, 370))
+            fenetre.blit(thickness_texte, thickness_text_rect)
+
+            # Draw thickness slider (grayed out if "Point" or "Aucun" is selected), lowered by 100 pixels
+            thickness_slider_rect.centerx = center_x
+            thickness_slider_rect.centery = 420  # Move thickness slider below the text
+            thickness_slider_color = (50, 50, 50) if CROSSHAIR_STYLES[crosshair_style_index] != "Croix" else gris
+            pygame.draw.rect(fenetre, thickness_slider_color, thickness_slider_rect)
+            
+            # Draw thickness slider handle
+            thickness_handle_pos = thickness_slider_rect.left + (thickness_slider_pos - 1) * (thickness_slider_rect.width / 4)
+            if CROSSHAIR_STYLES[crosshair_style_index] == "Croix":
+                pygame.draw.circle(fenetre, blanc, (thickness_handle_pos, thickness_slider_rect.centery), 8)
+            
+            # Draw thickness text input (without border), lowered by 100 pixels
+            thickness_text_surface = font.render(thickness_text_input, True, blanc if CROSSHAIR_STYLES[crosshair_style_index] == "Croix" else (50, 50, 50))
+            thickness_text_rect = thickness_text_surface.get_rect(center=(center_x + 150, 420))
+            fenetre.blit(thickness_text_surface, thickness_text_rect)
+
+            # Draw "Style" text and styles, lowered by 100 pixels
             style_text = pygame.font.Font(None, 40).render("Style:", True, blanc)
-            style_rect = style_text.get_rect(center=(center_x - 150, 220))
+            style_rect = style_text.get_rect(center=(center_x - 150, 490))
             fenetre.blit(style_text, style_rect)
 
-            # Crosshair style selection
+            # Crosshair style selection, lowered by 100 pixels
             for i, style in enumerate(CROSSHAIR_STYLES):
                 color = blanc if i == crosshair_style_index else gris
                 texte = pygame.font.Font(None, 40).render(style, True, color)
-                text_rect = texte.get_rect(center=(center_x, 220 + i * 50))
+                text_rect = texte.get_rect(center=(center_x, 490 + i * 50))
                 fenetre.blit(texte, text_rect)
 
-            # Add preview section with bigger gap
-            preview_y = 500  # Increased from 400
+            # Add preview section with bigger gap, lowered by 100 pixels
+            preview_y = 700  # Increased from 400
             preview_text = pygame.font.Font(None, 40).render("Aperçu", True, blanc)
             preview_text_rect = preview_text.get_rect(center=(center_x, preview_y - 50))
             fenetre.blit(preview_text, preview_text_rect)
 
-            # Preview box
+            # Preview box, lowered by 100 pixels
             preview_size = 150
             border_padding = 10
             outer_rect = pygame.Rect(preview_x - preview_size//2 - border_padding, 
@@ -945,11 +1007,35 @@ def afficher_parametres():
             # Draw crosshair preview
             if CROSSHAIR_STYLES[crosshair_style_index] == "Croix":
                 pygame.draw.line(fenetre, blanc, (preview_x - slider_pos, preview_y), 
-                               (preview_x + slider_pos, preview_y))
+                               (preview_x + slider_pos, preview_y), int(thickness_slider_pos))
                 pygame.draw.line(fenetre, blanc, (preview_x, preview_y - slider_pos), 
-                               (preview_x, preview_y + slider_pos))
+                               (preview_x, preview_y + slider_pos), int(thickness_slider_pos))
             elif CROSSHAIR_STYLES[crosshair_style_index] == "Point":
                 pygame.draw.circle(fenetre, blanc, (preview_x, preview_y), slider_pos)
+
+        # Sound Settings Section
+        elif selected_section == 2:
+            center_x = largeur // 2
+
+            # Draw "Volume" text and controls, lowered by 100 pixels
+            texte = pygame.font.Font(None, 40).render("Volume:", True, blanc)
+            text_rect = texte.get_rect(center=(center_x - 150, 250))
+            fenetre.blit(texte, text_rect)
+
+            # Draw volume slider, lowered by 100 pixels
+            volume_slider_rect.centerx = center_x
+            volume_slider_rect.centery = 300  # Move slider below the text
+            pygame.draw.rect(fenetre, gris, volume_slider_rect)
+            
+            # Draw volume slider handle
+            volume_handle_pos = volume_slider_rect.left + (volume_slider_pos / 100) * volume_slider_rect.width
+            pygame.draw.circle(fenetre, blanc, (volume_handle_pos, volume_slider_rect.centery), 8)
+            
+            # Draw volume text input (without border), lowered by 100 pixels
+            font = pygame.font.Font(None, 40)
+            volume_text_surface = font.render(volume_text_input, True, blanc)
+            volume_text_rect = volume_text_surface.get_rect(center=(center_x + 150, 300))
+            fenetre.blit(volume_text_surface, volume_text_rect)
 
         # Handle events
         for event in pygame.event.get():
@@ -967,7 +1053,7 @@ def afficher_parametres():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = event.pos
                 # Section selection
-                if mouse_y < 100:  # Click in the section headers area
+                if mouse_y < 200:  # Click in the section headers area, lowered by 100 pixels
                     for i in range(len(sections)):
                         if section_start_x + i * 200 <= mouse_x <= section_start_x + (i + 1) * 200:
                             selected_section = i
@@ -976,19 +1062,23 @@ def afficher_parametres():
                     # Resolution selection - only process if not in fullscreen
                     if not is_fullscreen:
                         for i in range(len(REsolUTIONS)):
-                            if 150 <= mouse_y <= 150 + len(REsolUTIONS) * 50:
-                                click_y = (mouse_y - 150) // 50
+                            if 250 <= mouse_y <= 250 + len(REsolUTIONS) * 50:  # Lowered by 100 pixels
+                                click_y = (mouse_y - 250) // 50
                                 if click_y < len(REsolUTIONS):
                                     resolution_index = click_y
                                     largeur, hauteur = REsolUTIONS[resolution_index]
                                     fenetre = pygame.display.set_mode((largeur, hauteur), pygame.RESIZABLE)
                                     os.environ['SDL_VIDEO_CENTERED'] = '1'
                     
-                    # Fullscreen toggle
-                    if 150 + len(REsolUTIONS) * 50 - 25 <= mouse_y <= 150 + len(REsolUTIONS) * 50 + 25:
+                    # Fullscreen toggle, lowered by 100 pixels
+                    if 250 + len(REsolUTIONS) * 50 - 25 <= mouse_y <= 250 + len(REsolUTIONS) * 50 + 25:
                         is_fullscreen = not is_fullscreen
                         flags = pygame.FULLSCREEN if is_fullscreen else pygame.RESIZABLE
                         fenetre = pygame.display.set_mode((largeur, hauteur), flags)
+                    
+                    # FPS counter toggle, lowered by 100 pixels
+                    if 250 + (len(REsolUTIONS) + 1) * 50 - 25 <= mouse_y <= 250 + (len(REsolUTIONS) + 1) * 50 + 25:
+                        show_fps = not show_fps
 
             if selected_section == 1:  # Crosshair settings
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -1000,25 +1090,71 @@ def afficher_parametres():
                         slider_pos = (mouse_x - slider_rect.left) / slider_rect.width * 20 + 1
                         slider_pos = max(1, min(20, slider_pos))
                         text_input = str(int(slider_pos))
-                    # Style selection
+                    # Handle thickness slider click/drag
+                    if thickness_slider_rect.collidepoint(event.pos) and CROSSHAIR_STYLES[crosshair_style_index] == "Croix":
+                        dragging_thickness_slider = True
+                        # Update thickness slider position immediately on click
+                        thickness_slider_pos = (mouse_x - thickness_slider_rect.left) / thickness_slider_rect.width * 4 + 1
+                        thickness_slider_pos = max(1, min(5, thickness_slider_pos))
+                        thickness_text_input = str(int(thickness_slider_pos))
+                    # Style selection, lowered by 100 pixels
                     for i, style in enumerate(CROSSHAIR_STYLES):
-                        style_y = 220 + i * 50
+                        style_y = 490 + i * 50
                         if abs(mouse_x - center_x) < 100 and abs(mouse_y - style_y) < 25:
                             crosshair_style_index = i
                 elif event.type == pygame.MOUSEBUTTONUP:
                     dragging_slider = False
-                elif event.type == pygame.MOUSEMOTION and dragging_slider:
+                    dragging_thickness_slider = False
+                elif event.type == pygame.MOUSEMOTION:
                     mouse_x = event.pos[0]
-                    if slider_rect.left <= mouse_x <= slider_rect.right:
+                    if dragging_slider and slider_rect.left <= mouse_x <= slider_rect.right:
                         slider_pos = (mouse_x - slider_rect.left) / slider_rect.width * 20 + 1
                         slider_pos = max(1, min(20, slider_pos))
                         text_input = str(int(slider_pos))
+                    if dragging_thickness_slider and thickness_slider_rect.left <= mouse_x <= thickness_slider_rect.right:
+                        thickness_slider_pos = (mouse_x - thickness_slider_rect.left) / thickness_slider_rect.width * 4 + 1
+                        thickness_slider_pos = max(1, min(5, thickness_slider_pos))
+                        thickness_text_input = str(int(thickness_slider_pos))
+
+            if selected_section == 2:  # Sound settings
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_x, mouse_y = event.pos
+                    # Handle volume slider click/drag
+                    if volume_slider_rect.collidepoint(event.pos):
+                        dragging_volume_slider = True
+                        # Update volume slider position immediately on click
+                        volume_slider_pos = (mouse_x - volume_slider_rect.left) / volume_slider_rect.width * 100
+                        volume_slider_pos = max(0, min(100, volume_slider_pos))
+                        volume_text_input = str(int(volume_slider_pos))
+                        volume = volume_slider_pos / 100
+                        pygame.mixer.music.set_volume(volume)
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    dragging_volume_slider = False
+                elif event.type == pygame.MOUSEMOTION:
+                    mouse_x = event.pos[0]
+                    if dragging_volume_slider and volume_slider_rect.left <= mouse_x <= volume_slider_rect.right:
+                        volume_slider_pos = (mouse_x - volume_slider_rect.left) / volume_slider_rect.width * 100
+                        volume_slider_pos = max(0, min(100, volume_slider_pos))
+                        volume_text_input = str(int(volume_slider_pos))
+                        volume = volume_slider_pos / 100
+                        pygame.mixer.music.set_volume(volume)
 
         # Update crosshair size from slider
         crosshair_size_index = min(len(CROSSHAIR_SIZES) - 1, 
                                  max(0, int((slider_pos - 1) / 5)))
+        # Update crosshair thickness from slider
+        crosshair_thickness_index = min(len(CROSSHAIR_THICKNESSES) - 1, 
+                                      max(0, int((thickness_slider_pos - 1) / 1)))
 
         pygame.display.flip()
+
+# Add this function to draw the FPS counter
+def dessiner_fps(surface, clock):
+    if show_fps:
+        fps = int(clock.get_fps())
+        police = pygame.font.Font(None, 36)
+        surface_texte = police.render(f"FPS: {fps}", True, blanc)
+        surface.blit(surface_texte, (10, 10))
 
 # Add these functions after other function definitions
 
@@ -1038,6 +1174,35 @@ def musique_fond():
 def arreter_musique():
     pygame.mixer.music.stop()
 
+def afficher_transition_niveau(niveau):
+    texte_niveau = pygame.font.Font(None, 150).render(f"Niveau {niveau}", True, blanc)
+    texte_niveau_rect = texte_niveau.get_rect(center=(largeur // 2, hauteur // 2 - 75))
+    
+    texte_sous_titre = pygame.font.Font(None, 100).render("Dans les abysses", True, blanc)
+    texte_sous_titre_rect = texte_sous_titre.get_rect(center=(largeur // 2, hauteur // 2 + 75))
+    
+    # Fade in
+    for alpha in range(0, 256, 5):
+        fenetre.fill(noir)
+        texte_niveau.set_alpha(alpha)
+        texte_sous_titre.set_alpha(alpha)
+        fenetre.blit(texte_niveau, texte_niveau_rect)
+        fenetre.blit(texte_sous_titre, texte_sous_titre_rect)
+        pygame.display.flip()
+        pygame.time.delay(10)
+    
+    # Wait for 3 seconds
+    pygame.time.delay(3000)
+    
+    # Fade out
+    for alpha in range(255, -1, -5):
+        fenetre.fill(noir)
+        texte_niveau.set_alpha(alpha)
+        texte_sous_titre.set_alpha(alpha)
+        fenetre.blit(texte_niveau, texte_niveau_rect)
+        fenetre.blit(texte_sous_titre, texte_sous_titre_rect)
+        pygame.display.flip()
+        pygame.time.delay(10)
 
 # Génération objet
 hopital = generer_hopital(nombre_lignes, nombre_colonnes)
@@ -1048,6 +1213,10 @@ ennemis = initialiser_ennemis(hopital, nombre_ennemis)
 afficher_menu()
 pygame.mouse.set_visible(False)  # Hide cursor during gameplay
 musique_fond()  # Start game music
+
+# Show level transition screen before starting the game
+afficher_transition_niveau(1)
+
 running = True
 while running:
     for event in pygame.event.get():
@@ -1182,10 +1351,13 @@ while running:
         size = CROSSHAIR_SIZES[crosshair_size_index]
         
         if CROSSHAIR_STYLES[crosshair_style_index] == "Croix":
-            pygame.draw.line(fenetre, blanc, (mouse_x - size, mouse_y), (mouse_x + size, mouse_y))
-            pygame.draw.line(fenetre, blanc, (mouse_x, mouse_y - size), (mouse_x, mouse_y + size))
+            pygame.draw.line(fenetre, blanc, (mouse_x - size, mouse_y), (mouse_x + size, mouse_y), CROSSHAIR_THICKNESSES[crosshair_thickness_index])
+            pygame.draw.line(fenetre, blanc, (mouse_x, mouse_y - size), (mouse_x, mouse_y + size), CROSSHAIR_THICKNESSES[crosshair_thickness_index])
         elif CROSSHAIR_STYLES[crosshair_style_index] == "Point":
             pygame.draw.circle(fenetre, blanc, (mouse_x, mouse_y), size)
+
+    # Draw FPS counter
+    dessiner_fps(fenetre, horloge)
 
     pygame.display.flip()
     horloge.tick(60)  # Limiter à 60 FPS

@@ -9,6 +9,18 @@ from screeninfo import get_monitors  # Ajouter cette importation
 pygame.init()
 pygame.mixer.init()  # Initialize the mixer module
 
+# Charger les musiques
+try:
+    musique_poursuite = pygame.mixer.Sound("C:/Users/luiar/Downloads/projetNSI/OST/outlast_run.mp3")
+    musique_poursuite.set_volume(0.5)  # Ajuster le volume à 50%
+except:
+    musique_poursuite = None
+
+# Variables pour gérer l'état de la musique
+est_en_poursuite = False
+temps_perdu_vue = 0
+DELAI_ARRET_MUSIQUE = 2000  # 2000 millisecondes = 2 secondes
+
 # Détection de la résolution de l'écran
 try:
     monitor = get_monitors()[0]  # Obtient le moniteur principal
@@ -23,8 +35,8 @@ except:
 taille_case = int(min(largeur, hauteur) / 20)  # Ajuste la taille des cases proportionnellement
 
 # Recalculer les dimensions du labyrinthe en fonction de la résolution
-nombre_lignes = (hauteur // taille_case) * 2
-nombre_colonnes = (largeur // taille_case) * 2
+nombre_lignes = (hauteur // taille_case) * 8
+nombre_colonnes = (largeur // taille_case) * 8
 
 # Ajuster les paramètres de vision en fonction de la résolution
 rayon_vision_proche = taille_case * 2  # Ajuste le rayon de vision proche
@@ -38,6 +50,8 @@ gris_fonce = (50, 50, 50)  # Pour les cases non sélectionnées
 gris_clair = (150, 150, 150)  # Pour la case sélectionnée
 bordeaux = (40, 0, 0)
 ENNEMIES = (255, 0, 0)  # Rouge pour les ennemis
+spray = (255, 165, 0)  # Couleur orange pour le spray au poivre
+marron_spray = (139, 69, 19, 100)  # Marron avec transparence
 
 # Load and scale player image
 joueur_img = pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/personnage.png")
@@ -59,10 +73,10 @@ pygame.display.set_caption("Echoes of the Hollow")
 horloge = pygame.time.Clock()
 
 # Paramètres de jeu
-nombre_cles = 3  # Nombre de clés à collecter pour gagner
-cles_collectees = 0  # Compteur de clés collectées
+nombre_cles = 3  
+cles_collectees = 0  
 nombre_ennemis = 5
-vitesse_ennemis = 0.4  # Augmentation de la vitesse des ennemis
+vitesse_ennemis = 0.6 
 
 # Paramètres de la vision
 cone_angle = 60  # Angle du cône de vision en degrés
@@ -112,6 +126,19 @@ taux_recuperation = 0.2  # Réduit pour une récupération plus lente
 delai_mouvement_normal = 100  # Délai en millisecondes pour le mouvement normal
 delai_mouvement_rapide = 40  # Délai en millisecondes pour le mouvement rapide
 
+# Au début du fichier, avec les autres constantes
+VITESSE_ENNEMIE_LENTE = 0.15  # Vitesse de patrouille (très lente)
+VITESSE_ENNEMIE_POURSUITE = 0.4  # Vitesse de poursuite (plus rapide mais moins que le joueur)
+
+# Ajouter aux paramètres de jeu
+nombre_sprays = 2  # Nombre de sprays sur la map
+sprays_collectes = 0  # Compteur de sprays dans l'inventaire
+
+# Ajouter aux variables globales au début du fichier
+spray_actif = False
+temps_spray = 0
+DUREE_AFFICHAGE_SPRAY = 500  # Durée d'affichage du spray en millisecondes
+
 class Ennemi:
     def __init__(self, x, y):
         self.x = x
@@ -120,13 +147,20 @@ class Ennemi:
         self.compteur_deplacement = 0
         self.cone_vision = 8
         self.angle_vision = 120
-        self.vitesse_normale = vitesse_ennemis
-        self.vitesse_lente = vitesse_ennemis * 0.3
-        self.vitesse_actuelle = self.vitesse_lente
-        # Nouvelles variables pour la mémoire
+        # Nouvelles vitesses
+        self.vitesse_patrouille = VITESSE_ENNEMIE_LENTE
+        self.vitesse_poursuite = VITESSE_ENNEMIE_POURSUITE
+        self.vitesse_actuelle = self.vitesse_patrouille
+        # Variables pour la mémoire
         self.derniere_pos_joueur = None
         self.temps_memoire = 0
-        self.duree_memoire_max = 180  # Environ 3 secondes à 60 FPS
+        self.duree_memoire_max = 180
+        # Variables pour la patrouille
+        self.pas_patrouille = 0
+        self.max_pas_patrouille = random.randint(5, 10)
+        self.ralenti = False
+        self.temps_ralenti = 0
+        self.vitesse_ralentie = VITESSE_ENNEMIE_LENTE * 0.5  # 50% plus lent
 
     def peut_voir_joueur(self, joueur_pos, hopital):
         # Calculer la distance entre l'ennemi et le joueur
@@ -164,69 +198,94 @@ def initialiser_ennemis(hopital, nombre_ennemis):
 
 
 def deplacer_ennemis(hopital, ennemis, joueur_pos):
+    global est_en_poursuite, temps_perdu_vue
+    joueur_est_vu = False
+    temps_actuel = pygame.time.get_ticks()
+    
     for ennemi in ennemis:
+        temps_actuel = pygame.time.get_ticks()
+        
+        # Gérer l'effet de ralentissement
+        if ennemi.ralenti:
+            if temps_actuel - ennemi.temps_ralenti >= 3000:  # 3 secondes
+                ennemi.ralenti = False
+                # Réinitialiser la vitesse normale
+                ennemi.vitesse_actuelle = ennemi.vitesse_patrouille
+            else:
+                ennemi.vitesse_actuelle = 0.1  # Vitesse fixée à 0.1 quand ralenti
+        
         voit_joueur = ennemi.peut_voir_joueur(joueur_pos, hopital)
-
-        if voit_joueur:
-            # Mettre à jour la dernière position connue du joueur
+        
+        if voit_joueur and not ennemi.ralenti:  # Ne change la vitesse que si pas ralenti
+            joueur_est_vu = True
+            temps_perdu_vue = 0
+            ennemi.vitesse_actuelle = ennemi.vitesse_poursuite
             ennemi.derniere_pos_joueur = joueur_pos[:]
             ennemi.temps_memoire = ennemi.duree_memoire_max
-            ennemi.vitesse_actuelle = ennemi.vitesse_normale
-        elif ennemi.temps_memoire > 0:
-            # L'ennemi ne voit plus le joueur mais se souvient de sa position
-            ennemi.temps_memoire -= 1
-            ennemi.vitesse_actuelle = ennemi.vitesse_normale * 0.7
-        else:
-            # L'ennemi a complètement perdu la trace du joueur
-            ennemi.derniere_pos_joueur = None
-            ennemi.vitesse_actuelle = ennemi.vitesse_lente
-
-        ennemi.compteur_deplacement += ennemi.vitesse_actuelle
-        if ennemi.compteur_deplacement >= 1:
-            ennemi.compteur_deplacement = 0
-
-            if voit_joueur:
-                cible = joueur_pos
-            elif ennemi.derniere_pos_joueur is not None and ennemi.temps_memoire > 0:
-                cible = ennemi.derniere_pos_joueur
-            else:
-                continue  # Skip this iteration if no valid target
-
-            dx = cible[0] - ennemi.x
-            dy = cible[1] - ennemi.y
-
-            if abs(dx) > abs(dy):
-                nouveau_x = ennemi.x + (1 if dx > 0 else -1)
-                nouveau_y = ennemi.y
-                if not deplacement_valide(hopital, [nouveau_x, nouveau_y]):
-                    nouveau_x = ennemi.x
-                    nouveau_y = ennemi.y + (1 if dy > 0 else -1)
-            else:
-                nouveau_y = ennemi.y + (1 if dy > 0 else -1)
-                nouveau_x = ennemi.x
-                if not deplacement_valide(hopital, [nouveau_x, nouveau_y]):
+            
+            ennemi.compteur_deplacement += ennemi.vitesse_actuelle
+            if ennemi.compteur_deplacement >= 1:
+                ennemi.compteur_deplacement = 0
+                
+                # Déplacement vers le joueur
+                dx = joueur_pos[0] - ennemi.x
+                dy = joueur_pos[1] - ennemi.y
+                
+                if abs(dx) > abs(dy):
                     nouveau_x = ennemi.x + (1 if dx > 0 else -1)
                     nouveau_y = ennemi.y
+                else:
+                    nouveau_x = ennemi.x
+                    nouveau_y = ennemi.y + (1 if dy > 0 else -1)
+                    
+                if deplacement_valide(hopital, [nouveau_x, nouveau_y]):
+                    ennemi.x = nouveau_x
+                    ennemi.y = nouveau_y
+                
+        elif not ennemi.ralenti:  # Ne change la vitesse que si pas ralenti
+            ennemi.vitesse_actuelle = ennemi.vitesse_patrouille
+            ennemi.compteur_deplacement += ennemi.vitesse_actuelle
+            
+            if ennemi.compteur_deplacement >= 1:
+                ennemi.compteur_deplacement = 0
+                
+                # Déplacement dans la direction actuelle
+                nouveau_x = ennemi.x + ennemi.direction[0]
+                nouveau_y = ennemi.y + ennemi.direction[1]
+                
+                if deplacement_valide(hopital, [nouveau_x, nouveau_y]):
+                    ennemi.x = nouveau_x
+                    ennemi.y = nouveau_y
+                    ennemi.pas_patrouille += 1
+                    
+                    # Changer de direction après un certain nombre de pas
+                    if ennemi.pas_patrouille >= ennemi.max_pas_patrouille:
+                        ennemi.direction = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+                        ennemi.pas_patrouille = 0
+                        ennemi.max_pas_patrouille = random.randint(5, 10)
+                else:
+                    # Si bloqué, changer de direction
+                    ennemi.direction = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+                    ennemi.pas_patrouille = 0
 
-            # Si l'ennemi atteint la dernière position connue et ne voit pas le joueur
-            if not voit_joueur and ennemi.derniere_pos_joueur:
-                if abs(ennemi.x - ennemi.derniere_pos_joueur[0]) <= 1 and \
-                   abs(ennemi.y - ennemi.derniere_pos_joueur[1]) <= 1:
-                    ennemi.temps_memoire = 0  # Arrêter la poursuite
-                    ennemi.derniere_pos_joueur = None
-            else:
-                # Comportement aléatoire plus lent
-                if random.random() < 0.05:
-                    ennemi.direction = random.choice(
-                        [(0, 1), (0, -1), (1, 0), (-1, 0)])
-
-            if deplacement_valide(hopital, [nouveau_x, nouveau_y]):
-                ennemi.x = nouveau_x
-                ennemi.y = nouveau_y
-            else:
-                ennemi.direction = random.choice(
-                    [(0, 1), (0, -1), (1, 0), (-1, 0)])
-
+    # Gestion de la musique de poursuite
+    if joueur_est_vu:
+        if not est_en_poursuite and musique_poursuite:
+            pygame.mixer.music.pause()  # Pause la musique de fond
+            musique_poursuite.play(-1)  # -1 pour jouer en boucle
+        est_en_poursuite = True
+        temps_perdu_vue = 0
+    elif est_en_poursuite:
+        if temps_perdu_vue == 0:
+            # Premier moment où le joueur n'est plus vu
+            temps_perdu_vue = temps_actuel
+        elif temps_actuel - temps_perdu_vue >= DELAI_ARRET_MUSIQUE:
+            # Arrêter la musique seulement après le délai
+            if musique_poursuite:
+                musique_poursuite.fadeout(1000)  # Fade out sur 1 seconde
+                pygame.mixer.music.unpause()  # Reprend la musique de fond
+            est_en_poursuite = False
+            temps_perdu_vue = 0
 
 
 def verifier_collision_ennemis(joueur_pos, ennemis):
@@ -238,7 +297,7 @@ def verifier_collision_ennemis(joueur_pos, ennemis):
 
 
 def game_over():
-    arreter_musique()  # Stop current music
+    arreter_musiques()  # Stop current music
     musique_menu()  # Start menu music
     fenetre.fill(noir)
     texte = pygame.font.Font(None, 60).render("Game Over!", True, blanc)
@@ -475,10 +534,15 @@ def dessiner_hopital(hopital, joueur_pos, camera_offset):
         y = i * taille_case - cam_y
         for j in range(debut_x, fin_x):
             case = hopital[i][j]
-            if case in ["S", "C"]:  # Exclure "Y" car les ennemis sont gérés séparément
+            if case in ["S", "C", "P"]:  # P pour Pepper spray
                 if est_visible(joueur_pos, (j, i), hopital):
                     x = j * taille_case - cam_x
-                    couleur = sortie if case == "S" else cle
+                    if case == "S":
+                        couleur = sortie  # Vert pour la sortie
+                    elif case == "C":
+                        couleur = cle  # Jaune pour les clés
+                    elif case == "P":
+                        couleur = spray  # Orange pour le spray
                     pygame.draw.rect(virtual_surface, couleur,
                                      (x, y, taille_case, taille_case))
 
@@ -523,7 +587,7 @@ def deplacement_valide(hopital, pos):
 
 
 def afficher_victoire():
-    arreter_musique()  # Stop game music
+    arreter_musiques()
     fenetre.fill(noir)
     texte = pygame.font.Font(None, 60).render("Victoire !", True, blanc)
     texte_rect = texte.get_rect(center=(largeur // 2, hauteur // 2))
@@ -841,25 +905,25 @@ def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
 
 def dessiner_inventaire(surface):
     # Position et taille de l'inventaire
-    inventaire_x = 30
-    inventaire_y = hauteur - 70
+    inv_x = 20  # Position à gauche
+    inv_y = hauteur - 70  # Position en bas
     case_taille = 50
     espacement = 10
-    nombre_cases = 5
-
-    # Dessiner les cases d'inventaire
-    for i in range(nombre_cases):
-        x = inventaire_x + (case_taille + espacement) * i
-        rect = pygame.Rect(x, inventaire_y, case_taille, case_taille)
-
+    
+    # Dessiner les cases d'inventaire horizontalement
+    for i in range(5):  # 5 cases d'inventaire
+        x = inv_x + (case_taille + espacement) * i  # Déplacement horizontal
+        pygame.draw.rect(surface, gris_fonce, (x, inv_y, case_taille, case_taille))
         if i == index_case_selectionnee:
-            # Case sélectionnée
-            pygame.draw.rect(surface, gris_clair, rect)
-            pygame.draw.rect(surface, blanc, rect, 3)  # Bordure blanche épaisse
+            pygame.draw.rect(surface, gris_clair, (x, inv_y, case_taille, case_taille), 2)
         else:
-            # Cases non sélectionnées
-            pygame.draw.rect(surface, gris_fonce, rect)
-            pygame.draw.rect(surface, gris, rect, 1)  # Bordure fine
+            pygame.draw.rect(surface, gris, (x, inv_y, case_taille, case_taille), 1)
+        
+        # Afficher les sprays dans l'inventaire
+        if i == 0 and sprays_collectes > 0:
+            pygame.draw.rect(surface, spray, (x + 5, inv_y + 5, case_taille - 10, case_taille - 10))
+            texte = pygame.font.Font(None, 20).render(str(sprays_collectes), True, blanc)
+            surface.blit(texte, (x + case_taille - 15, inv_y + case_taille - 15))
 
 
 def afficher_parametres():
@@ -1061,14 +1125,105 @@ def musique_fond():
     pygame.mixer.music.play(-1)
 
 
-def arreter_musique():
-    pygame.mixer.music.stop()
+def arreter_musiques():
+    global est_en_poursuite, temps_perdu_vue
+    if musique_poursuite:
+        musique_poursuite.stop()
+    pygame.mixer.stop()
+    est_en_poursuite = False
+    temps_perdu_vue = 0
 
 
-# Génération objet
+def placer_sprays(hopital, nombre_sprays):
+    cases_vides = [(j, i) for i, ligne in enumerate(hopital)
+                   for j, case in enumerate(ligne) if case == " "]
+    for _ in range(nombre_sprays):
+        if cases_vides:
+            x, y = random.choice(cases_vides)
+            hopital[y][x] = "P"  # P pour Pepper spray au lieu de S
+            cases_vides.remove((x, y))
+
+def redimensionner_jeu(nouvelle_largeur, nouvelle_hauteur):
+    global largeur, hauteur, taille_case, nombre_lignes, nombre_colonnes
+    
+    # Mettre à jour les dimensions de la fenêtre
+    largeur = nouvelle_largeur
+    hauteur = nouvelle_hauteur
+    
+    # Recalculer la taille des cases
+    taille_case = int(min(largeur, hauteur) / 20)
+    
+    # Recalculer les dimensions du labyrinthe
+    nombre_lignes = (hauteur // taille_case) * 2
+    nombre_colonnes = (largeur // taille_case) * 2
+    
+    # Générer un nouveau labyrinthe avec les nouvelles dimensions
+    nouveau_hopital = generer_hopital(nombre_lignes, nombre_colonnes)
+    
+    # Replacer les objets dans le nouveau labyrinthe
+    placer_cles(nouveau_hopital, nombre_cles)
+    placer_sprays(nouveau_hopital, nombre_sprays)
+    
+    return nouveau_hopital
+
+# Ensuite, la génération des objets
 hopital = generer_hopital(nombre_lignes, nombre_colonnes)
 cles = placer_cles(hopital, nombre_cles)
+placer_sprays(hopital, nombre_sprays)
 ennemis = initialiser_ennemis(hopital, nombre_ennemis)
+
+# Placer après les autres définitions de fonctions (comme deplacer_ennemis, verifier_collision_ennemis, etc.)
+# et avant la boucle principale du jeu
+
+def dessiner_cone_spray(surface, position, angle, length):
+    masque = pygame.Surface((largeur, hauteur), pygame.SRCALPHA)
+    
+    x, y = position
+    angle_spray = 30  # Angle du cône plus fin (30 degrés)
+    start_angle = math.radians(angle - angle_spray / 2)
+    end_angle = math.radians(angle + angle_spray / 2)
+
+    # Points pour le polygone du spray
+    points = [(x, y)]  # Point de départ (position du joueur)
+
+    # Pour chaque rayon du cône
+    steps = 180  # Plus de précision pour un rendu plus lisse
+    for i in range(steps + 1):
+        theta = start_angle + i * (end_angle - start_angle) / steps
+        ray_x = x + length * math.cos(theta)
+        ray_y = y + length * math.sin(theta)
+        points.append((ray_x, ray_y))
+
+    # Dessiner le polygone du spray
+    if len(points) > 2:
+        pygame.draw.polygon(masque, marron_spray, points)
+
+    # Appliquer le masque sur l'écran
+    surface.blit(masque, (0, 0))
+
+def utiliser_spray(joueur_pos, angle_de_vue, ennemis, hopital):
+    global sprays_collectes, spray_actif, temps_spray
+    if sprays_collectes <= 0:
+        return
+    
+    spray_actif = True
+    temps_spray = pygame.time.get_ticks()
+    
+    # Paramètres du cône de spray
+    portee_spray = 5 * taille_case  # Portée du spray en pixels
+    
+    # Pour chaque ennemi
+    for ennemi in ennemis:
+        # Vérifier si l'ennemi est dans le cône
+        if est_dans_cone(joueur_pos, (ennemi.x, ennemi.y), angle_de_vue, portee_spray):
+            # Vérifier s'il n'y a pas de mur entre le joueur et l'ennemi
+            if not a_mur_entre(joueur_pos, (ennemi.x, ennemi.y), hopital):
+                # Ralentir l'ennemi
+                ennemi.ralenti = True
+                ennemi.temps_ralenti = pygame.time.get_ticks()
+                ennemi.vitesse_actuelle = 0.1  # Vitesse ralentie fixée à 0.1
+    
+    sprays_collectes -= 1
 
 # Boucle principale
 afficher_menu()
@@ -1087,23 +1242,32 @@ while running:
                 if choix == "recommencer":
                     hopital = generer_hopital(nombre_lignes, nombre_colonnes)
                     cles = placer_cles(hopital, nombre_cles)
+                    placer_sprays(hopital, nombre_sprays)
+                    bandages_collectes = 0  # Réinitialiser le compteur
                     joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
                     cles_collectees = 0
                     ennemis = initialiser_ennemis(hopital, nombre_ennemis)
+                    arreter_musiques()  # Arrêter toutes les musiques
+                    musique_fond()  # Relancer la musique de fond du jeu
                 elif choix == "menu":
                     # Réinitialiser le jeu
                     hopital = generer_hopital(nombre_lignes, nombre_colonnes)
                     cles = placer_cles(hopital, nombre_cles)
+                    placer_sprays(hopital, nombre_sprays)
                     joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
                     cles_collectees = 0
                     ennemis = initialiser_ennemis(hopital, nombre_ennemis)
                     # Retourner au menu
                     afficher_menu()
+                    arreter_musiques()  # Arrêter la musique du menu
+                    musique_fond()  # Démarrer la musique du jeu
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 4:  # Mouse wheel up
                 index_case_selectionnee = max(0, index_case_selectionnee - 1)
             elif event.button == 5:  # Mouse wheel down
                 index_case_selectionnee = min(4, index_case_selectionnee + 1)
+            if event.button == 1:  # Clic gauche
+                utiliser_spray(joueur_pos, angle_de_vue, ennemis, hopital)
         if event.type == pygame.VIDEORESIZE and not is_fullscreen:
             largeur, hauteur = event.size
             fenetre = pygame.display.set_mode((largeur, hauteur), pygame.RESIZABLE)
@@ -1171,11 +1335,14 @@ while running:
             # Réinitialiser le jeu
             hopital = generer_hopital(nombre_lignes, nombre_colonnes)
             cles = placer_cles(hopital, nombre_cles)
+            placer_sprays(hopital, nombre_sprays)
             joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
             cles_collectees = 0
             ennemis = initialiser_ennemis(hopital, nombre_ennemis)
             # Retourner au menu
             afficher_menu()
+            arreter_musiques()  # Arrêter la musique du menu
+            musique_fond()  # Démarrer la musique du jeu
 
     # Dessiner l'hôpital
     dessiner_hopital(hopital, joueur_pos, camera_offset)
@@ -1212,6 +1379,11 @@ while running:
         cles_collectees += 1
         hopital[joueur_pos[1]][joueur_pos[0]] = " "
 
+    # Collecte du spray
+    if hopital[joueur_pos[1]][joueur_pos[0]] == "P":  # P pour Pepper spray
+        sprays_collectes += 1
+        hopital[joueur_pos[1]][joueur_pos[0]] = " "
+
     # Déplacer les ennemis
     deplacer_ennemis(hopital, ennemis, joueur_pos)
 
@@ -1236,7 +1408,7 @@ while running:
 
     # Victoire si le joueur atteint la sortie avec toutes les clés
     if hopital[joueur_pos[1]][joueur_pos[0]] == "S" and cles_collectees == nombre_cles:
-        arreter_musique()  # Stop game music
+        arreter_musiques()
         afficher_victoire()
         running = False
 
@@ -1253,6 +1425,17 @@ while running:
             pygame.draw.line(fenetre, blanc, (mouse_x, mouse_y - size), (mouse_x, mouse_y + size))
         elif CROSSHAIR_STYLES[crosshair_style_index] == "Point":
             pygame.draw.circle(fenetre, blanc, (mouse_x, mouse_y), size)
+
+    # Après avoir dessiné le labyrinthe et avant d'afficher l'interface
+    if spray_actif:
+        temps_actuel = pygame.time.get_ticks()
+        if temps_actuel - temps_spray < DUREE_AFFICHAGE_SPRAY:
+            # Calculer la position du joueur à l'écran
+            joueur_ecran_x = joueur_pos[0] * taille_case - camera_offset[0] + taille_case // 2
+            joueur_ecran_y = joueur_pos[1] * taille_case - camera_offset[1] + taille_case // 2
+            dessiner_cone_spray(fenetre, (joueur_ecran_x, joueur_ecran_y), angle_de_vue, 5 * taille_case)
+        else:
+            spray_actif = False
 
     pygame.display.flip()
     horloge.tick(60)  # Limiter à 60 FPS

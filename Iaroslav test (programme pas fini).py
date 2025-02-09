@@ -794,63 +794,73 @@ def afficher_menu():
     bandages_collectes = 0
     endurance_actuelle = endurance_max
     
-    pygame.mouse.set_visible(True)  # Show cursor in main menu
-    musique_menu()  # Commencer la musique du menu
-    # Charger l'image de fond
-    background = pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/fond_menu.png")
-    # Ajuster la taille de l'image pour faire la taille de la fenetre
-    background = pygame.transform.scale(background, (largeur, hauteur))
+    pygame.mouse.set_visible(True)
+    musique_menu()
+
+    # Charger les différentes couches du fond
+    background_layers = [
+        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_1.png"),
+        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_2.png"),
+        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_3.png"),
+        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_4.png"),
+        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_5.png")
+    ]
+    
+    # Augmenter encore le facteur d'échelle pour plus de marge de mouvement
+    scale_factor = 1.3  # Augmenté à 1.3 pour plus d'amplitude
+    scaled_width = int(largeur * scale_factor)
+    scaled_height = int(hauteur * scale_factor)
+    background_layers = [pygame.transform.scale(layer, (scaled_width, scaled_height)) 
+                        for layer in background_layers]
+    
+    # Augmenter les facteurs de parallaxe pour plus de mouvement
+    parallax_factors = [0.02, 0.04, 0.08, 0.12, 0.16]  # Facteurs plus importants
+    initial_offset_x = -150  # Décalage initial plus important
 
     while True:
-        # Draw background if available, otherwise fill with black
-        if background:
-            fenetre.blit(background, (0, 0))
-        else:
-            fenetre.fill(noir)
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        
+        # Calculer le décalage relatif avec plus d'amplitude
+        center_x = largeur / 2
+        center_y = hauteur / 2
+        rel_x = (mouse_x - center_x) / (center_x * 0.7)  # Réduit le diviseur pour plus d'amplitude
+        rel_y = (mouse_y - center_y) / (center_y * 0.7)
 
-        # Titre
+        for i, layer in enumerate(background_layers):
+            # Calculer les décalages avec plus d'amplitude
+            offset_x = initial_offset_x - rel_x * parallax_factors[i] * (scaled_width - largeur)
+            offset_y = -rel_y * parallax_factors[i] * (scaled_height - hauteur)
+            
+            fenetre.blit(layer, (offset_x, offset_y))
+
+        # Reste du code inchangé...
         titre = pygame.font.Font(
             "C:/Users/luiar/Downloads/projetNSI/November.ttf", 150).render("Echoes of the Hollow", True, blanc)
-        fenetre.blit(
-            titre, (largeur // 2 - titre.get_width() // 2, hauteur - 900))
+        titre_rect = titre.get_rect(center=(largeur//2, hauteur//6))
+        fenetre.blit(titre, titre_rect)
 
-        # Récupérer la position de la souris
-        souris_x, souris_y = pygame.mouse.get_pos()
-
-        # Boutons avec leurs dimensions
-        bouton_jouer = pygame.Rect(largeur // 2 - 200, 530, 400, 80)
-        bouton_parametres = pygame.Rect(largeur // 2 - 200, 630, 400, 80)
-        bouton_crédits = pygame.Rect(largeur // 2 - 200, 730, 400, 80)
-        bouton_quitter = pygame.Rect(largeur // 2 - 200, 830, 400, 80)
-
-        # Liste des boutons et leurs textes
+        button_gap = 120
+        start_y = hauteur // 3
         boutons = [
-            (bouton_jouer, "Jouer", 50),
-            (bouton_parametres, "Paramètres", 50),
-            (bouton_crédits, "Crédits", 50),
-            (bouton_quitter, "Quitter", 50),
+            (pygame.Rect(largeur // 2 - 250, start_y, 500, 90), "Nouvelle Partie", 40),
+            (pygame.Rect(largeur // 2 - 250, start_y + button_gap, 500, 90), "Paramètres", 40),
+            (pygame.Rect(largeur // 2 - 250, start_y + button_gap * 2, 500, 90), "Crédits", 40),
+            (pygame.Rect(largeur // 2 - 250, start_y + button_gap * 3, 500, 90), "Quitter", 40),
         ]
 
+        souris_x, souris_y = pygame.mouse.get_pos()
+
         for bouton, texte, taille_texte in boutons:
-            # Vérifier si la souris est sur le bouton
             if bouton.collidepoint(souris_x, souris_y):
-                couleur = (255, 0, 0)  # Rouge
-                # Agrandir légèrement le bouton
+                couleur = (255, 0, 0)
                 bouton = bouton.inflate(20, 20)
             else:
                 couleur = bordeaux
 
-            # Dessiner le bouton arrondi
-            # 15 est le rayon de courbure
             bords_arrondis(fenetre, couleur, bouton, 15)
-
-            texte_rendu = pygame.font.Font(
-                "C:/Users/luiar/Downloads/projetNSI/HelpMe.ttf", 35).render(texte, True, blanc)
-            fenetre.blit(
-                texte_rendu,
-                (bouton.centerx - texte_rendu.get_width() // 2,
-                 bouton.centery - texte_rendu.get_height() // 2),
-            )
+            texte_rendu = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/HelpMe.ttf", taille_texte).render(texte, True, blanc)
+            fenetre.blit(texte_rendu, (bouton.centerx - texte_rendu.get_width() // 2,
+                                      bouton.centery - texte_rendu.get_height() // 2))
 
         pygame.display.flip()
 
@@ -858,16 +868,19 @@ def afficher_menu():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button < 4:  # Only buttons 1-3, ignore scroll
-                if bouton_jouer.collidepoint(event.pos):
-                    return
-                if bouton_crédits.collidepoint(event.pos):
-                    afficher_credits()
-                if bouton_parametres.collidepoint(event.pos):
-                    afficher_parametres()
-                if bouton_quitter.collidepoint(event.pos):
-                    pygame.quit()
-                    sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button < 4:
+                for bouton, texte, _ in boutons:
+                    if bouton.collidepoint(event.pos):
+                        if texte == "Nouvelle Partie":
+                            pygame.mouse.set_visible(False)
+                            return
+                        elif texte == "Paramètres":
+                            afficher_parametres()
+                        elif texte == "Crédits":
+                            afficher_credits()
+                        elif texte == "Quitter":
+                            pygame.quit()
+                            sys.exit()
 
 # Afficher le menu pause
 def afficher_menu_pause():
@@ -1498,6 +1511,10 @@ while running:
     camera_offset[0] += (camera_cible_x - camera_offset[0]) * facteur_lissage
     camera_offset[1] += (camera_cible_y - camera_offset[1]) * facteur_lissage
 
+    # S'assurer que la position finale respecte toujours les limites
+    camera_offset[0] = max(0, min(camera_offset[0], len(hopital[0]) * taille_case - largeur))
+    camera_offset[1] = max(0, min(camera_offset[1], len(hopital) * taille_case - hauteur))
+
     # Dessiner l'hôpital
     dessiner_hopital(hopital, joueur_pos, camera_offset)
 
@@ -1603,5 +1620,29 @@ def dessiner_barre_endurance(surface):
     
     # Dessiner le contour
     pygame.draw.rect(surface, blanc, (x, y, largeur_max, hauteur_barre), 2)
+
+def mettre_a_jour_camera(joueur_pos):
+    global camera_offset
+    
+    # Calculer la position souhaitée de la caméra (centrée sur le joueur)
+    camera_x = joueur_pos[0] * taille_case - largeur // 2
+    camera_y = joueur_pos[1] * taille_case - hauteur // 2
+    
+    # Calculer les limites de la carte en pixels
+    limite_droite = len(hopital[0]) * taille_case - largeur
+    limite_bas = len(hopital) * taille_case - hauteur
+    
+    # Limiter la position de la caméra pour ne pas voir hors de la carte
+    camera_x = max(0, min(camera_x, limite_droite))
+    camera_y = max(0, min(camera_y, limite_bas))
+    
+    # Interpolation douce vers la nouvelle position
+    vitesse_camera = 0.1  # Ajustez cette valeur pour une transition plus ou moins rapide
+    camera_offset[0] += (camera_x - camera_offset[0]) * vitesse_camera
+    camera_offset[1] += (camera_y - camera_offset[1]) * vitesse_camera
+    
+    # S'assurer que la position finale respecte toujours les limites
+    camera_offset[0] = max(0, min(camera_offset[0], limite_droite))
+    camera_offset[1] = max(0, min(camera_offset[1], limite_bas))
 
 pygame.quit()

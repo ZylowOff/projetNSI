@@ -6,20 +6,18 @@ import os
 
 # Initialisation de Pygame
 pygame.init()
-pygame.mixer.init()  # Initialize the mixer module
+pygame.mixer.init()  # Initialiser le module de mixage
 
 # Dimensions de la fenêtre
 largeur = 1920  # Largeur de la fenêtre
-hauteur = 1080   # Hauteur de la fenêtre
+hauteur = 1080  # Hauteur de la fenêtre
 taille_case = 50  # Taille d'une case dans le labyrinthe
 
 # Couleurs utilisées dans le jeu
 noir = (0, 0, 0)
 blanc = (255, 255, 255)
 gris = (200, 200, 200)
-# Load and scale player image
-joueur_img = pygame.image.load("./assets/characters/personnage.png")
-joueur = pygame.transform.scale(joueur_img, (taille_case * 1.25, taille_case * 1.25))  # Scale to tile size
+gris_fonce = (50, 50, 50)
 sortie = (0, 255, 0)
 mur = (100, 40, 30)
 sol = (115, 109, 115)
@@ -27,28 +25,56 @@ cle = (255, 223, 0)
 ennemis = (255, 0, 0)
 bordeaux = (40, 0, 0)
 
-# Move this line up, before window creation
-is_fullscreen = True  # Default to fullscreen
+# Fichiers utilisés dans le jeu
+joueur_img = pygame.image.load(
+    "./assets/characters/personnage.png"
+)  # Importer l'image du joueur
+joueur = pygame.transform.scale(
+    joueur_img, (taille_case * 1.25, taille_case * 1.25)
+)  # Ajuster la taille du joueur
+son_menu = "./assets/music/S.T.A.L.K.E.R..mp3"  # Importer la musique du menu STALKER
+son_fond = "./assets/music/Amnesia-02.mp3"  # Importer la musique de fond Amnesia
+font_helpme = "./assets/font/HelpMe.ttf"  # Importer la police d'écriture HelpMe
+font_november = "./assets/font/November.ttf"  # Importer la police d'écriture November
+font_arrows = "./assets/font/Arrows.ttf"  # Importer la police d'écriture Arrows
+fond_1 = "./assets/background/background_1.png"  # Importer la premiere image de fond
+fond_2 = "./assets/background/background_2.png"  # Importer la deuxième image de fond
+fond_3 = "./assets/background/background_3.png"  # Importer la troisième image de fond
+fond_4 = "./assets/background/background_4.png"  # Importer la quatrième image de fond
+fond_5 = "./assets/background/background_5.png"  # Importer la cinquième image de fond
+# icone = pygame.image.load('icon.png')  # Importer l'icône de la fenêtre
+nom = "Echoes of the Hollow"  # Nom du jeu
 
-# Then create the window
-fenetre = pygame.display.set_mode((largeur, hauteur), pygame.FULLSCREEN if is_fullscreen else pygame.RESIZABLE)
-pygame.display.set_caption("Echoes of the Hollow")
+plein_ecran = True  # Plein écran par défaut
+
+# Création de la fenêtre
+fenetre = pygame.display.set_mode(
+    (largeur, hauteur), pygame.FULLSCREEN if plein_ecran else pygame.RESIZABLE
+)
+pygame.display.set_caption(nom)  # Nom de la fenêtre
+# pygame.display.set_icon(icone) # Icône de la fenêtre
 
 # Horloge pour contrôler les FPS
 horloge = pygame.time.Clock()
 
 # Paramètres de jeu
-nombre_cles = 3  # Nombre de clés à collecter pour gagner
+nombre_cles = 3  # Nombre de clés à collecter
 cles_collectees = 0  # Compteur de clés collectées
-nombre_ennemis = 3
-vitesse_ennemis = 0.4  # Augmentation de la vitesse des ennemis
+nombre_ennemis = 3  # Nombre d'ennemis
+vitesse_ennemis = 0.4  # Vitesse des ennemis
+delai_mouvement = 35  # Délai en millisecondes entre chaque mouvement
+dernier_mouvement = 0  # Pour suivre le temps du dernier mouvement
 
 # Paramètres de la vision
 cone_angle = 60  # Angle du cône de vision en degrés
-cone_longueur = 600  # Augmentation de la longueur du cône de vision (était 375)
-
-# Ajouter cette constante avec les autres paramètres de vision
+cone_longueur = 600  # Longueur du cône de vision
 rayon_vision_proche = 100  # Rayon du cercle de vision autour du joueur
+
+# Paramètres du réticule
+tailles_reticule = [3, 5, 7, 10]  # Différentes tailles de réticule
+types_reticule = ["Croix", "Point", "Aucun"]  # Différents types de réticule
+index_taille_reticule = 1  # Deuxième taille par défaut (5)
+index_type_reticule = 0  # Réticule croix par défaut
 
 # Génération initiale
 nombre_lignes = (hauteur // taille_case) * 8
@@ -59,39 +85,41 @@ camera_offset = [0, 0]
 # Initialisation de l'angle de vue avec une valeur par défaut
 angle_de_vue = 270  # 0 = droite, 90 = bas, 180 = gauche, 270 = haut
 
-# Structure pour stocker les ennemis avec leurs positions et directions
+# Stocker les ennemis avec leurs positions et directions
 ennemis = []  # Liste qui contiendra des dictionnaires pour chaque ennemi
 
-# Ajouter ces variables après les autres paramètres du jeu
-delai_mouvement = 35  # Délai en millisecondes entre chaque mouvement
-dernier_mouvement = 0  # Pour suivre le temps du dernier mouvement
-
-# Ajouter une variable pour suivre l'index de la case sélectionnée
+# Suivris de l'index de la case sélectionnée
 index_case_selectionnee = 0
 
-# Ajouter ces variables pour les résolutions
-REsolUTIONS = [(800, 600), (1024, 768), (1280, 720), (1920, 1080)]
+# Différentes résolutions
+resolutions = [
+    (800, 600),
+    (1024, 768),
+    (1280, 720),
+    (1920, 1080),
+    (2560, 1440),
+    (largeur, hauteur),  # Résolution native
+]
 resolution_index = 0  # Index de la résolution sélectionnée
 
-# Add near the top of the file with other constants
-VIRTUAL_WIDTH = 1920  # Base resolution width
-VIRTUAL_HEIGHT = 1080  # Base resolution height
+largeur_base = 1920  # Largeur de la résolution de base
+hauteur_base = 1080  # Hauteur de la résolution de base
 
-# Add these constants near the top with other settings
-CROSSHAIR_SIZES = [3, 5, 7, 10]  # Different crosshair sizes
-CROSSHAIR_STYLES = ["Croix", "Point", "Aucun"]  # Different crosshair styles
-crosshair_size_index = 1  # Default to second size (5)
-crosshair_style_index = 0  # Default to Cross
+montrer_fps = False  # Ne pas montrer les FPS par défaut
 
-# Add this variable near the top with other settings
-show_fps = False  # Default to not showing FPS
+epaisseur_reticule = [1, 2, 3, 4, 5]  # Différentes épaisseurs de réticule
+index_epaisseur_reticule = 1  # Epaisseur par défaut (2)
 
-# Add this variable near the top with other settings
-CROSSHAIR_THICKNESSES = [1, 2, 3, 4, 5]  # Different crosshair thicknesses
-crosshair_thickness_index = 1  # Default to second thickness (2)
+volume = 0.5  # Niveau de volume par défaut
 
-# Add this variable near the top with other settings
-volume = 0.5  # Default volume level
+# Paramètres d'endurance
+endurance_max = 100  # Endurance maximale
+endurance_actuelle = endurance_max  # Endurance actuelle
+taux_diminution = 0.5  # Réduit pour une diminution plus lente
+taux_recuperation = 0.2  # Réduit pour une récupération plus lente
+delai_mouvement_normal = 100  # Délai en millisecondes pour le mouvement normal
+delai_mouvement_rapide = 40  # Délai en millisecondes pour le mouvement rapide
+
 
 class Ennemi:
     def __init__(self, x, y):
@@ -104,16 +132,15 @@ class Ennemi:
         self.vitesse_normale = vitesse_ennemis
         self.vitesse_lente = vitesse_ennemis * 0.3
         self.vitesse_actuelle = self.vitesse_lente
-        # Nouvelles variables pour la mémoire
         self.derniere_pos_joueur = None
         self.temps_memoire = 0
         self.duree_memoire_max = 180  # Environ 3 secondes à 60 FPS
 
-    def peut_voir_joueur(self, joueur_pos, hopital):
+    def peut_voir_joueur(self, joueur_pos, jeu):
         # Calculer la distance entre l'ennemi et le joueur
         dx = joueur_pos[0] - self.x
         dy = joueur_pos[1] - self.y
-        distance = math.sqrt(dx*dx + dy*dy)
+        distance = math.sqrt(dx * dx + dy * dy)
 
         if distance > self.cone_vision:
             return False
@@ -121,21 +148,25 @@ class Ennemi:
         # Vérification de la ligne de vue (pas d'obstacles)
         x, y = self.x, self.y
         pas = 0.1
-        longueur = math.sqrt(dx*dx + dy*dy)
+        longueur = math.sqrt(dx * dx + dy * dy)
         if longueur > 0:
-            dx, dy = dx/longueur, dy/longueur
-            for i in range(int(longueur/pas)):
+            dx, dy = dx / longueur, dy / longueur
+            for i in range(int(longueur / pas)):
                 x += dx * pas
                 y += dy * pas
-                if hopital[int(y)][int(x)] == "#":
+                if jeu[int(y)][int(x)] == "#":
                     return False
         return True
 
 
-def initialiser_ennemis(hopital, nombre_ennemis):
+def initialiser_ennemis(jeu, nombre_ennemis):
     ennemis = []
-    cases_vides = [(j, i) for i, ligne in enumerate(hopital)
-                   for j, case in enumerate(ligne) if case == " "]
+    cases_vides = [
+        (j, i)
+        for i, ligne in enumerate(jeu)
+        for j, case in enumerate(ligne)
+        if case == " "
+    ]
 
     for _ in range(nombre_ennemis):
         if cases_vides:
@@ -145,9 +176,9 @@ def initialiser_ennemis(hopital, nombre_ennemis):
     return ennemis
 
 
-def deplacer_ennemis(hopital, ennemis, joueur_pos):
+def deplacer_ennemis(jeu, ennemis, joueur_pos):
     for ennemi in ennemis:
-        voit_joueur = ennemi.peut_voir_joueur(joueur_pos, hopital)
+        voit_joueur = ennemi.peut_voir_joueur(joueur_pos, jeu)
 
         if voit_joueur:
             # Mettre à jour la dernière position connue du joueur
@@ -172,7 +203,7 @@ def deplacer_ennemis(hopital, ennemis, joueur_pos):
             elif ennemi.derniere_pos_joueur is not None and ennemi.temps_memoire > 0:
                 cible = ennemi.derniere_pos_joueur
             else:
-                continue  # Skip this iteration if no valid target
+                continue
 
             dx = cible[0] - ennemi.x
             dy = cible[1] - ennemi.y
@@ -180,48 +211,46 @@ def deplacer_ennemis(hopital, ennemis, joueur_pos):
             if abs(dx) > abs(dy):
                 nouveau_x = ennemi.x + (1 if dx > 0 else -1)
                 nouveau_y = ennemi.y
-                if not deplacement_valide(hopital, [nouveau_x, nouveau_y]):
+                if not deplacement_valide(jeu, [nouveau_x, nouveau_y]):
                     nouveau_x = ennemi.x
                     nouveau_y = ennemi.y + (1 if dy > 0 else -1)
             else:
                 nouveau_y = ennemi.y + (1 if dy > 0 else -1)
                 nouveau_x = ennemi.x
-                if not deplacement_valide(hopital, [nouveau_x, nouveau_y]):
+                if not deplacement_valide(jeu, [nouveau_x, nouveau_y]):
                     nouveau_x = ennemi.x + (1 if dx > 0 else -1)
                     nouveau_y = ennemi.y
 
             # Si l'ennemi atteint la dernière position connue et ne voit pas le joueur
             if not voit_joueur and ennemi.derniere_pos_joueur:
-                if abs(ennemi.x - ennemi.derniere_pos_joueur[0]) <= 1 and \
-                   abs(ennemi.y - ennemi.derniere_pos_joueur[1]) <= 1:
+                if (
+                    abs(ennemi.x - ennemi.derniere_pos_joueur[0]) <= 1
+                    and abs(ennemi.y - ennemi.derniere_pos_joueur[1]) <= 1
+                ):
                     ennemi.temps_memoire = 0  # Arrêter la poursuite
                     ennemi.derniere_pos_joueur = None
             else:
                 # Comportement aléatoire plus lent
                 if random.random() < 0.05:
-                    ennemi.direction = random.choice(
-                        [(0, 1), (0, -1), (1, 0), (-1, 0)])
+                    ennemi.direction = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
 
-            if deplacement_valide(hopital, [nouveau_x, nouveau_y]):
+            if deplacement_valide(jeu, [nouveau_x, nouveau_y]):
                 ennemi.x = nouveau_x
                 ennemi.y = nouveau_y
             else:
-                ennemi.direction = random.choice(
-                    [(0, 1), (0, -1), (1, 0), (-1, 0)])
-
+                ennemi.direction = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
 
 
 def verifier_collision_ennemis(joueur_pos, ennemis):
     for ennemi in ennemis:
-        if (abs(joueur_pos[0] - ennemi.x) < 1 and
-                abs(joueur_pos[1] - ennemi.y) < 1):
+        if abs(joueur_pos[0] - ennemi.x) < 1 and abs(joueur_pos[1] - ennemi.y) < 1:
             return True
     return False
 
 
 def game_over():
-    arreter_musique()  # Stop current music
-    musique_menu()  # Start menu music
+    arreter_musique()  # Arrete la musique de jeu
+    musique_menu()  # Commencer la musique du menu
     fenetre.fill(noir)
     texte = pygame.font.Font(None, 60).render("Game Over!", True, blanc)
     texte_rect = texte.get_rect(center=(largeur // 2, hauteur // 2))
@@ -257,9 +286,11 @@ def appliquer_masque_vision(surface, position, angle, length):
             grille_y = int((ray_y + camera_offset[1]) / taille_case)
 
             # Vérifier si on touche un mur
-            if (0 <= grille_y < len(hopital) and
-                0 <= grille_x < len(hopital[0]) and
-                    hopital[grille_y][grille_x] == "#"):
+            if (
+                0 <= grille_y < len(jeu)
+                and 0 <= grille_x < len(jeu[0])
+                and jeu[grille_y][grille_x] == "#"
+            ):
                 points.append((ray_x, ray_y))
                 break
             elif dist >= length - 2:  # Si on atteint la distance maximale
@@ -270,18 +301,17 @@ def appliquer_masque_vision(surface, position, angle, length):
         pygame.draw.polygon(masque, (0, 0, 0, 0), points)
 
     # Ajouter le cercle de vision proche
-    pygame.draw.circle(masque, (0, 0, 0, 0),
-                       (int(x), int(y)), rayon_vision_proche)
+    pygame.draw.circle(masque, (0, 0, 0, 0), (int(x), int(y)), rayon_vision_proche)
 
     # Appliquer le masque sur l'écran
     surface.blit(masque, (0, 0))
 
 
-def generer_hopital(nb_lignes, nb_colonnes):
+def generer_jeu(nb_lignes, nb_colonnes):
     # Ajuste les dimensions pour garantir un labyrinthe valide
     nb_lignes = (nb_lignes // 3) * 3 + 1
     nb_colonnes = (nb_colonnes // 3) * 3 + 1
-    hopital = [["#" for _ in range(nb_colonnes)] for _ in range(nb_lignes)]
+    jeu = [["#" for _ in range(nb_colonnes)] for _ in range(nb_lignes)]
 
     def voisins(x, y):
         directions = [(6, 0), (-6, 0), (0, 6), (0, -6)]
@@ -297,13 +327,16 @@ def generer_hopital(nb_lignes, nb_colonnes):
         for i in range(-1, 2):
             for j in range(-1, 2):
                 if 0 <= y + i < nb_lignes and 0 <= x + j < nb_colonnes:
-                    hopital[y + i][x + j] = " "
+                    jeu[y + i][x + j] = " "
         for nx, ny in voisins(x, y):
-            if hopital[ny][nx] == "#":
+            if jeu[ny][nx] == "#":
                 for i in range(-1, 2):
                     for j in range(-3, 4):
-                        if 0 <= (y + ny) // 2 + i < nb_lignes and 0 <= (x + nx) // 2 + j < nb_colonnes:
-                            hopital[(y + ny) // 2 + i][(x + nx) // 2 + j] = " "
+                        if (
+                            0 <= (y + ny) // 2 + i < nb_lignes
+                            and 0 <= (x + nx) // 2 + j < nb_colonnes
+                        ):
+                            jeu[(y + ny) // 2 + i][(x + nx) // 2 + j] = " "
                 départ(nx, ny)
 
     # Commencer au centre du labyrinthe
@@ -314,27 +347,30 @@ def generer_hopital(nb_lignes, nb_colonnes):
         (0, random.randint(1, nb_colonnes - 2)),  # Bord supérieur
         (nb_lignes - 1, random.randint(1, nb_colonnes - 2)),  # Bord inférieur
         (random.randint(1, nb_lignes - 2), 0),  # Bord gauche
-        (random.randint(1, nb_lignes - 2), nb_colonnes - 1)  # Bord droit
+        (random.randint(1, nb_lignes - 2), nb_colonnes - 1),  # Bord droit
     ]
     random.shuffle(bords)
     for sortie_y, sortie_x in bords:
-        if hopital[sortie_y][sortie_x] == " ":
-            hopital[sortie_y][sortie_x] = "S"  # Marque la sortie
+        if jeu[sortie_y][sortie_x] == " ":
+            jeu[sortie_y][sortie_x] = "S"  # Marque la sortie
             break
 
-    return hopital
+    return jeu
+
 
 # Fonction pour placer les clés dans le labyrinthe
-
-
-def placer_cles(hopital, nombre_cles):
+def placer_cles(jeu, nombre_cles):
     cles = []
-    cases_vides = [(i, j) for i, ligne in enumerate(hopital)
-                   for j, case in enumerate(ligne) if case == " "]
+    cases_vides = [
+        (i, j)
+        for i, ligne in enumerate(jeu)
+        for j, case in enumerate(ligne)
+        if case == " "
+    ]
     for _ in range(nombre_cles):
         x, y = random.choice(cases_vides)
         cles.append((x, y))
-        hopital[x][y] = "C"  # Ajoute une clé à cet emplacement
+        jeu[x][y] = "C"  # Ajoute une clé à cet emplacement
         cases_vides.remove((x, y))
     return cles
 
@@ -343,9 +379,9 @@ def est_dans_cone(joueur_pos, case_pos, angle, length):
     """Version optimisée de la vérification du cône"""
     dx = case_pos[0] - joueur_pos[0]
     dy = case_pos[1] - joueur_pos[1]
-    distance = dx*dx + dy*dy  # Pas besoin de sqrt pour la comparaison
+    distance = dx * dx + dy * dy  # Pas besoin de sqrt pour la comparaison
 
-    if distance > (length/taille_case) * (length/taille_case):
+    if distance > (length / taille_case) * (length / taille_case):
         return False
 
     angle = angle % 360
@@ -355,7 +391,7 @@ def est_dans_cone(joueur_pos, case_pos, angle, length):
     return abs(diff_angle) <= cone_angle / 2
 
 
-def est_visible(joueur_pos, case_pos, hopital):
+def est_visible(joueur_pos, case_pos, jeu):
     """Vérifie si une case est visible (dans le cône ou le cercle proche, et pas de mur entre)"""
     joueur_x, joueur_y = joueur_pos
     case_x, case_y = case_pos
@@ -363,22 +399,22 @@ def est_visible(joueur_pos, case_pos, hopital):
     # Calculer la distance entre le joueur et la case
     dx = case_x - joueur_x
     dy = case_y - joueur_y
-    distance = math.sqrt(dx*dx + dy*dy)
+    distance = math.sqrt(dx * dx + dy * dy)
 
     # Vérifier si la case est dans le cercle de vision proche
     if distance * taille_case <= rayon_vision_proche:
-        # Vérifier s'il n'y a pas de mur entre
-        return not a_mur_entre(joueur_pos, case_pos, hopital)
+        # Vérifier s'il n'y a pas de mur entre le joueur et la case
+        return not a_mur_entre(joueur_pos, case_pos, jeu)
 
     # Sinon, vérifier si c'est dans le cône de vision
     if not est_dans_cone(joueur_pos, case_pos, angle_de_vue, cone_longueur):
         return False
 
-    # Vérifier s'il n'y a pas de mur entre
-    return not a_mur_entre(joueur_pos, case_pos, hopital)
+    # Vérifier s'il n'y a pas de mur entre le joueur et la case
+    return not a_mur_entre(joueur_pos, case_pos, jeu)
 
 
-def a_mur_entre(joueur_pos, case_pos, hopital):
+def a_mur_entre(joueur_pos, case_pos, jeu):
     """Version optimisée de la vérification des murs"""
     x1, y1 = joueur_pos
     x2, y2 = case_pos
@@ -397,7 +433,7 @@ def a_mur_entre(joueur_pos, case_pos, hopital):
                 y += 1 if y2 > y1 else -1
                 err += dx
             x += 1 if x2 > x1 else -1
-            if hopital[y][x] == "#":
+            if jeu[y][x] == "#":
                 return True
     else:
         err = dy / 2.0
@@ -407,24 +443,26 @@ def a_mur_entre(joueur_pos, case_pos, hopital):
                 x += 1 if x2 > x1 else -1
                 err += dy
             y += 1 if y2 > y1 else -1
-            if hopital[y][x] == "#":
+            if jeu[y][x] == "#":
                 return True
 
     return False
 
 
-def dessiner_hopital(hopital, joueur_pos, camera_offset):
+def dessiner_jeu(jeu, joueur_pos, camera_offset):
     """Version optimisée du rendu"""
-    # Create a virtual surface at base resolution
-    virtual_surface = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
-    virtual_surface.fill(noir)
+    # Surface virtuelle pour le rendu de base
+    surface_virtuelle = pygame.Surface((largeur_base, hauteur_base))
+    surface_virtuelle.fill(noir)
 
     # Calculer les limites visibles avec une marge
     marge = 2
     debut_x = max(0, int(camera_offset[0] // taille_case) - marge)
     debut_y = max(0, int(camera_offset[1] // taille_case) - marge)
-    fin_x = min(len(hopital[0]), int((camera_offset[0] + largeur) // taille_case) + marge)
-    fin_y = min(len(hopital), int((camera_offset[1] + hauteur) // taille_case) + marge)
+    fin_x = min(
+        len(jeu[0]), int((camera_offset[0] + largeur) // taille_case) + marge
+    )
+    fin_y = min(len(jeu), int((camera_offset[1] + hauteur) // taille_case) + marge)
 
     # Pré-calculer les offsets de caméra
     cam_x = camera_offset[0]
@@ -439,71 +477,71 @@ def dessiner_hopital(hopital, joueur_pos, camera_offset):
         y = i * taille_case - cam_y
         for j in range(debut_x, fin_x):
             x = j * taille_case - cam_x
-            if hopital[i][j] == "#":
+            if jeu[i][j] == "#":
                 pygame.draw.rect(temp_surface, mur, (x, y, taille_case, taille_case))
             else:
                 pygame.draw.rect(temp_surface, sol, (x, y, taille_case, taille_case))
 
-    virtual_surface.blit(temp_surface, (0, 0))
+    surface_virtuelle.blit(temp_surface, (0, 0))
 
     # Appliquer le masque de vision
     joueur_centre = (
         joueur_pos[0] * taille_case - cam_x + taille_case // 2,
-        joueur_pos[1] * taille_case - cam_y + taille_case // 2
+        joueur_pos[1] * taille_case - cam_y + taille_case // 2,
     )
-    appliquer_masque_vision(virtual_surface, joueur_centre, angle_de_vue, cone_longueur)
+    appliquer_masque_vision(
+        surface_virtuelle, joueur_centre, angle_de_vue, cone_longueur
+    )
 
     # Rendu des objets spéciaux
     for i in range(debut_y, fin_y):
         y = i * taille_case - cam_y
         for j in range(debut_x, fin_x):
-            case = hopital[i][j]
+            case = jeu[i][j]
             if case in ["S", "C"]:  # Exclure "Y" car les ennemis sont gérés séparément
-                if est_visible(joueur_pos, (j, i), hopital):
+                if est_visible(joueur_pos, (j, i), jeu):
                     x = j * taille_case - cam_x
                     couleur = sortie if case == "S" else cle
-                    pygame.draw.rect(virtual_surface, couleur, (x, y, taille_case, taille_case))
+                    pygame.draw.rect(
+                        surface_virtuelle, couleur, (x, y, taille_case, taille_case)
+                    )
 
-    # Dessiner le joueur
-    if joueur:
-        # Calculate centered position by accounting for image size
-        joueur_x = joueur_pos[0] * taille_case - camera_offset[0] - (joueur.get_width() - taille_case) // 2
-        joueur_y = joueur_pos[1] * taille_case - camera_offset[1] - (joueur.get_height() - taille_case) // 2
-        
-        # Rotate image to face mouse
-        # Convert angle_de_vue to match Pygame's rotation (0° is up, clockwise)
-        rotation_angle = -(angle_de_vue + 90)  # +90 because original image faces up
-        joueur_rotated = pygame.transform.rotate(joueur, rotation_angle)
-        
-        # Recalculate position to keep rotation centered
-        joueur_x -= (joueur_rotated.get_width() - joueur.get_width()) // 2
-        joueur_y -= (joueur_rotated.get_height() - joueur.get_height()) // 2
-        
-        virtual_surface.blit(joueur_rotated, (joueur_x, joueur_y))
-    else:
-        # Fallback to rectangle if image loading failed
-        pygame.draw.rect(virtual_surface, joueur, (
-            joueur_pos[0] * taille_case - camera_offset[0],
-            joueur_pos[1] * taille_case - camera_offset[1],
-            taille_case, taille_case
-        ))
+    # Calculer le centre du joueur
+    joueur_x = (
+        joueur_pos[0] * taille_case
+        - camera_offset[0]
+        - (joueur.get_width() - taille_case) // 2
+    )
+    joueur_y = (
+        joueur_pos[1] * taille_case
+        - camera_offset[1]
+        - (joueur.get_height() - taille_case) // 2
+    )
 
-    # At the end of the function, scale the virtual surface to the actual window size
-    scaled_surface = pygame.transform.scale(virtual_surface, (largeur, hauteur))
+    # Tourner l'image du joueur pour suive la souris et convertit l'angle de vue pour correspondre à la rotation de Pygame (0° est en haut, dans le sens horaire)
+    rotation_angle = -(angle_de_vue + 90)  # Ajouter 90 pour ajuster l'angle de départ
+    joueur_rotated = pygame.transform.rotate(joueur, rotation_angle)
+
+    # Calculer la position du joueur après rotation
+    joueur_x -= (joueur_rotated.get_width() - joueur.get_width()) // 2
+    joueur_y -= (joueur_rotated.get_height() - joueur.get_height()) // 2
+
+    surface_virtuelle.blit(joueur_rotated, (joueur_x, joueur_y))
+
+    # Ajuster la taille de la surface virtuelle à la taille de la fenêtre
+    scaled_surface = pygame.transform.scale(surface_virtuelle, (largeur, hauteur))
     fenetre.blit(scaled_surface, (0, 0))
 
+
 # Vérification de la validité du déplacement
-
-
-def deplacement_valide(hopital, pos):
+def deplacement_valide(jeu, pos):
     x, y = pos
-    if 0 <= y < len(hopital) and 0 <= x < len(hopital[0]):
-        return hopital[y][x] != "#"
+    if 0 <= y < len(jeu) and 0 <= x < len(jeu[0]):
+        return jeu[y][x] != "#"
     return False
 
-# Fonction de victoire
 
-
+# Menu de victoire
 def afficher_victoire():
     arreter_musique()  # Stop game music
     fenetre.fill(noir)
@@ -514,84 +552,86 @@ def afficher_victoire():
     pygame.time.delay(3000)
 
 
+# Menu des crédits
 def afficher_credits():
     # Constants for animation
-    SCROLL_SPEED = 5  # Reduced for smoother scrolling
-    TITLE_SIZE = 100
-    NAME_SIZE = 80
-    ROLE_SIZE = 50
-    SPACING = 120      # Regular spacing
-    SPACING_2 = 30     # Small spacing (between name and role)
-    SPACING_3 = 200    # Large spacing (after title)
-    
-    # Credits content with roles
+    vitesse_scroll = 5  # Reduced for smoother scrolling
+    taille_titre = 100
+    taille_nom = 80
+    taille_roles = 50
+    espacement = 120  # Espacement de taille normale entre les développeurs
+    espacement_2 = 30  # Petit espacement (entre nom et rôle)
+    espacement_3 = 200  # Espacement large (après le titre)
+
+    # Contenu des crédits avec les rôles
     credits_data = [
-        ("Développeurs :", TITLE_SIZE),
-        ("", SPACING_3),  # Large spacing after title
-        ("Iaroslav Lushcheko", NAME_SIZE),
-        ("", SPACING_2),  # Small spacing between name and role
-        ("Programmation, Game Design", ROLE_SIZE),
-        ("", SPACING),    # Regular spacing between developers
-        ("Eliott Raulet", NAME_SIZE),
-        ("", SPACING_2),  # Small spacing between name and role
-        ("Level Design, Game Mechanics", ROLE_SIZE),
-        ("", SPACING),    # Regular spacing between developers
-        ("Mohamed El Mekkawy", NAME_SIZE),
-        ("", SPACING_2),  # Small spacing between name and role
-        ("UI/UX, Game Systems", ROLE_SIZE),
-        ("", SPACING),    # Regular spacing between developers
-        ("Ugo Guillemart", NAME_SIZE),
-        ("", SPACING_2),  # Small spacing between name and role
-        ("Sound Design, Testing", ROLE_SIZE),
-        ("", SPACING_3),  # Extra spacing at the end
+        ("Développeurs :", taille_titre),
+        ("", espacement_3),
+        ("Iaroslav Lushcheko", taille_nom),
+        ("", espacement_2),
+        ("Chef de projet, Méchaniques du jeu", taille_roles),
+        ("", espacement),
+        ("Eliott Raulet", taille_nom),
+        ("", espacement_2),
+        ("Génération du niveau, Méchaniques du jeu", taille_roles),
+        ("", espacement),
+        ("Ugo Guillemart", taille_nom),
+        ("", espacement_2),
+        ("Graphismes, Génération du niveau", taille_roles),
+        ("", espacement),
+        ("Mohamed El Mekkawy", taille_nom),
+        ("", espacement_2),
+        ("Paramètres, Customisation, Divers", taille_roles),      
+        ("", espacement_3),
     ]
-    
-    # Calculate total height of all text
+
+    # Calculer la longueur totale pour le défilement
     total_height = sum([size if text == "" else 80 for text, size in credits_data])
-    y_offset = float(hauteur)  # Use float for smoother scrolling
-    
+    y_offset = float(hauteur)  # Utiliser un float pour le défilement fluide
+
     while True:
         fenetre.fill(noir)
-        
-        current_y = int(y_offset)  # Convert to int only for drawing
-        
-        # Draw each credit entry
+
+        current_y = int(y_offset)  # Convertir en entier uniquement pour le rendu
+
+        # Dessiner le texte des crédits
         for text, size in credits_data:
-            if text:  # Only render non-empty strings
-                texte = pygame.font.Font("./assets/font/HelpMe.ttf", size).render(text, True, blanc)
+            if text:  # Seulement dessiner si le texte n'est pas vide
+                texte = pygame.font.Font(font_helpme, size).render(text, True, blanc)
                 texte_rect = texte.get_rect(center=(largeur // 2, current_y))
-                
-                # Only draw if within screen bounds with some margin
+
+                # Seulment dessiner si le texte est dans la fenêtre
                 if -50 <= current_y <= hauteur + 50:
-                    # Add glow effect for titles
-                    if size == TITLE_SIZE:
-                        glow = pygame.font.Font("./assets/font/HelpMe.ttf", size).render(text, True, (100, 100, 100))
+                    # Ajouter un effet de lueur pour le titre
+                    if size == taille_titre:
+                        glow = pygame.font.Font(font_helpme, size).render(
+                            text, True, (100, 100, 100)
+                        )
                         glow_rect = glow.get_rect(center=(largeur // 2, current_y))
                         fenetre.blit(glow, (glow_rect.x + 2, glow_rect.y + 2))
-                    
+
             fenetre.blit(texte, texte_rect)
 
-            # Use the actual spacing value from the tuple
             current_y += size if text == "" else 80
-        
-        # Handle events
+
+        # Gérer les différents événements pour quitter les crédits
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:  # Only handle left click, ignore scroll
+                if event.button == 1:  # Seulement le clic gauche pour quitter
                     return
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return
 
-        # Automatic scroll
-        y_offset -= SCROLL_SPEED
-        
+        # Scroll automatique
+        y_offset -= vitesse_scroll
+
         if y_offset < -total_height:
             y_offset = float(hauteur)
-        
+
         pygame.display.flip()
         horloge.tick(60)
 
@@ -602,186 +642,242 @@ def bords_arrondis(surface, color, rect, radius):
 
     # Dessiner des cercles remplis pour les coins
     pygame.draw.circle(surface, color, (x + radius, y + radius), radius)
+    pygame.draw.circle(surface, color, (x + width - radius, y + radius), radius)
+    pygame.draw.circle(surface, color, (x + radius, y + height - radius), radius)
     pygame.draw.circle(
-        surface, color, (x + width - radius, y + radius), radius)
-    pygame.draw.circle(surface, color, (x + radius,
-                       y + height - radius), radius)
-    pygame.draw.circle(surface, color, (x + width - radius,
-                       y + height - radius), radius)
+        surface, color, (x + width - radius, y + height - radius), radius
+    )
 
     # Dessiner des rectangles pour remplir la surface
-    pygame.draw.rect(surface, color, (x + radius, y, width - 2*radius, height))
-    pygame.draw.rect(surface, color, (x, y + radius, width, height - 2*radius))
+    pygame.draw.rect(surface, color, (x + radius, y, width - 2 * radius, height))
+    pygame.draw.rect(surface, color, (x, y + radius, width, height - 2 * radius))
 
 
-def afficher_menu():
-    pygame.mouse.set_visible(True)  # Show cursor in main menu
-    musique_menu()  # Commencer la musique du menu
-    # Charger l'image de fond
-    background = pygame.image.load("./assets/background/forest.png")
-    # Ajuster la taille de l'image pour faire la taille de la fenetre
-    background = pygame.transform.scale(background, (largeur, hauteur))
+def draw_button(surface, rect, text, font, hover_color, default_color, text_color, border_radius=15, icon_text=None, icon_font=None):
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+    if rect.collidepoint(mouse_x, mouse_y):
+        color = hover_color
+        rect = rect.inflate(20, 20)
+    else:
+        color = default_color
 
-    while True:
-        # Draw background if available, otherwise fill with black
-        if background:
-            fenetre.blit(background, (0, 0))
-        else:
-            fenetre.fill(noir)
+    bords_arrondis(surface, color, rect, border_radius)
+    
+    if icon_text and icon_font:
+        icon_surface = icon_font.render(icon_text, True, text_color)
+        surface.blit(
+            icon_surface,
+            (
+                rect.left + 10,
+                rect.centery - icon_surface.get_height() // 2,
+            ),
+        )
+        text_surface = font.render(text, True, text_color)
+        surface.blit(
+            text_surface,
+            (
+                rect.left + 40,
+                rect.centery - text_surface.get_height() // 2,
+            ),
+        )
+    else:
+        text_surface = font.render(text, True, text_color)
+        surface.blit(
+            text_surface,
+            (
+                rect.centerx - text_surface.get_width() // 2,
+                rect.centery - text_surface.get_height() // 2,
+            ),
+        )
 
-        # Titre
-        titre = pygame.font.Font(
-            "./assets/font/November.ttf", 150).render("Echoes of the Hollow", True, blanc)
-        fenetre.blit(
-            titre, (largeur // 2 - titre.get_width() // 2, hauteur - 900))
 
-        # Récupérer la position de la souris
-        souris_x, souris_y = pygame.mouse.get_pos()
-
-        # Boutons avec leurs dimensions
-        bouton_jouer = pygame.Rect(largeur // 2 - 200, 530, 400, 80)
-        bouton_parametres = pygame.Rect(largeur // 2 - 200, 630, 400, 80)
-        bouton_crédits = pygame.Rect(largeur // 2 - 200, 730, 400, 80)
-        bouton_quitter = pygame.Rect(largeur // 2 - 200, 830, 400, 80)
-
-        # Liste des boutons et leurs textes
-        boutons = [
-            (bouton_jouer, "Jouer", 50),
-            (bouton_parametres, "Paramètres", 50),
-            (bouton_crédits, "Crédits", 50),
-            (bouton_quitter, "Quitter", 50),
-        ]
-
-        for bouton, texte, taille_texte in boutons:
-            # Vérifier si la souris est sur le bouton
-            if bouton.collidepoint(souris_x, souris_y):
-                couleur = (255, 0, 0)  # Rouge
-                # Agrandir légèrement le bouton
-                bouton = bouton.inflate(20, 20)
-            else:
-                couleur = bordeaux
-
-            # Dessiner le bouton arrondi
-            # 15 est le rayon de courbure
-            bords_arrondis(fenetre, couleur, bouton, 15)
-
-            texte_rendu = pygame.font.Font(
-                "./assets/font/HelpMe.ttf", 35).render(texte, True, blanc)
-            fenetre.blit(
-                texte_rendu,
-                (bouton.centerx - texte_rendu.get_width() // 2,
-                 bouton.centery - texte_rendu.get_height() // 2),
-            )
-
-        pygame.display.flip()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button < 4:  # Only buttons 1-3, ignore scroll
-                if bouton_jouer.collidepoint(event.pos):
-                    return
-                if bouton_crédits.collidepoint(event.pos):
-                    afficher_credits()
-                if bouton_parametres.collidepoint(event.pos):
+def handle_event(event, boutons):
+    if event.type == pygame.QUIT:
+        pygame.quit()
+        sys.exit()
+    if event.type == pygame.MOUSEBUTTONDOWN and event.button < 4:
+        for bouton, texte, _ in boutons:
+            if bouton.collidepoint(event.pos):
+                if texte == "Nouvelle Partie":
+                    pygame.mouse.set_visible(False)
+                    return "nouvelle_partie"
+                elif texte == "Paramètres":
                     afficher_parametres()
-                if bouton_quitter.collidepoint(event.pos):
+                elif texte == "Crédits":
+                    afficher_credits()
+                elif texte == "Quitter":
                     pygame.quit()
                     sys.exit()
+                elif texte == "Continuer":
+                    pygame.mouse.set_visible(False)
+                    return "continuer"
+                elif texte == "Recommencer":
+                    return "recommencer"
+                elif texte == "Menu Principal":
+                    return "menu"
+    if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_ESCAPE:
+            return "escape"
 
-# Afficher le menu pause
-def afficher_menu_pause():
-    pygame.mouse.set_visible(True)  # Show cursor in pause menu
-    global resolution_index, largeur, hauteur, fenetre
-    
-    # Load the background image
-    background = pygame.image.load("./assets/background/background_1.png")  # Ensure the path is correct
-    background = pygame.transform.scale(background, (largeur, hauteur))  # Scale to fit the window
+def afficher_menu():
+    global cles_collectees, sprays_collectes, bandages_collectes, endurance_actuelle
+
+    # Réinitialiser l'inventaire
+    cles_collectees = 0
+    sprays_collectes = 0
+    bandages_collectes = 0
+    endurance_actuelle = endurance_max
+
+    pygame.mouse.set_visible(True)
+    musique_menu()
+
+    # Charger les différentes couches du fond
+    couches_fond = [
+        pygame.image.load(fond_1),
+        pygame.image.load(fond_2),
+        pygame.image.load(fond_3),
+        pygame.image.load(fond_4),
+        pygame.image.load(fond_5),
+    ]
+
+    facteur_echelle = 1.3
+    echelle_largeur = int(largeur * facteur_echelle)
+    echelle_hauteur = int(hauteur * facteur_echelle)
+    couches_fond = [
+        pygame.transform.scale(couche, (echelle_largeur, echelle_hauteur))
+        for couche in couches_fond
+    ]
+
+    # Facteurs de parallaxe pour plus de mouvement
+    parallax_factors = [0.02, 0.04, 0.08, 0.12, 0.16]
+    initial_offset_x = -150  # Décalage initial
 
     while True:
-        # Draw the background image instead of filling with black
-        fenetre.blit(background, (0, 0))
+        mouse_x, mouse_y = pygame.mouse.get_pos()
 
-        # Title at the top
-        titre = pygame.font.Font("./assets/font/November.ttf", 100).render("Echoes of the Hollow", True, blanc)
+        # Calculer le décalage relatif avec plus d'amplitude
+        center_x = largeur / 2
+        center_y = hauteur / 2
+        rel_x = (mouse_x - center_x) / (
+            center_x * 0.7
+        )  # Réduit le diviseur pour plus d'amplitude
+        rel_y = (mouse_y - center_y) / (center_y * 0.7)
+
+        for i, layer in enumerate(couches_fond):
+            # Calculer les décalages avec plus d'amplitude
+            offset_x = initial_offset_x - rel_x * parallax_factors[i] * (
+                echelle_largeur - largeur
+            )
+            offset_y = -rel_y * parallax_factors[i] * (echelle_hauteur - hauteur)
+
+            fenetre.blit(layer, (offset_x, offset_y))
+
+        titre = pygame.font.Font(font_november, 150).render(nom, True, blanc)
         titre_rect = titre.get_rect(center=(largeur // 2, hauteur // 6))
         fenetre.blit(titre, titre_rect)
 
-        # Return button at top left with arrow
-        bouton_retour = pygame.Rect(20, 20, 200, 60)  # Made wider again to fit text
-        if bouton_retour.collidepoint(pygame.mouse.get_pos()):
-            couleur_retour = (255, 0, 0)
-            bouton_retour = bouton_retour.inflate(20, 20)
-        else:
-            couleur_retour = bordeaux
-        bords_arrondis(fenetre, couleur_retour, bouton_retour, 15)
-        
-        # Draw arrow and text separately
-        texte_arrow = pygame.font.Font("./assets/font/Arrows.ttf", 40).render("R", True, blanc)
-        texte_retour = pygame.font.Font("./assets/font/HelpMe.ttf", 30).render("Retour", True, blanc)
-        
-        # Position arrow and text
-        fenetre.blit(texte_arrow, (bouton_retour.x + 15, bouton_retour.centery - texte_arrow.get_height() // 2))
-        fenetre.blit(texte_retour, (bouton_retour.x + 45, bouton_retour.centery - texte_retour.get_height() // 2))
-
-        # Centered menu buttons with consistent gaps (moved up)
-        button_gap = 120  # Consistent gap between buttons
-        start_y = hauteur // 3  # Starting Y position moved up (was hauteur // 2 - 150)
+        espace_boutton = 120
+        y_depart = hauteur // 3
         boutons = [
-            (pygame.Rect(largeur // 2 - 250, start_y, 500, 90), "Continuer", 40),
-            (pygame.Rect(largeur // 2 - 250, start_y + button_gap, 500, 90), "Recommencer", 40),
-            (pygame.Rect(largeur // 2 - 250, start_y + button_gap * 2, 500, 90), "Paramètres", 40),
-            (pygame.Rect(largeur // 2 - 250, start_y + button_gap * 3, 500, 90), "Menu Principal", 40),
-            (pygame.Rect(largeur // 2 - 250, start_y + button_gap * 4, 500, 90), "Quitter", 40),
+            (
+                pygame.Rect(largeur // 2 - 250, y_depart, 500, 90),
+                "Nouvelle Partie",
+                40
+            ),
+            (
+                pygame.Rect(largeur // 2 - 250, y_depart + espace_boutton, 500, 90),
+                "Paramètres",
+                40,
+            ),
+            (
+                pygame.Rect(largeur // 2 - 250, y_depart + espace_boutton * 2, 500, 90),
+                "Crédits",
+                40,
+            ),
+            (
+                pygame.Rect(largeur // 2 - 250, y_depart + espace_boutton * 3, 500, 90),
+                "Quitter",
+                40,
+            ),
         ]
 
         souris_x, souris_y = pygame.mouse.get_pos()
 
         for bouton, texte, taille_texte in boutons:
-            if bouton.collidepoint(souris_x, souris_y):
-                couleur = (255, 0, 0)
-                bouton = bouton.inflate(20, 20)
-            else:
-                couleur = bordeaux
-
-            bords_arrondis(fenetre, couleur, bouton, 15)
-            texte_rendu = pygame.font.Font("./assets/font/HelpMe.ttf", taille_texte).render(texte, True, blanc)
-            fenetre.blit(texte_rendu, (bouton.centerx - texte_rendu.get_width() // 2,
-                                      bouton.centery - texte_rendu.get_height() // 2))
+            draw_button(fenetre, bouton, texte, pygame.font.Font(font_helpme, taille_texte), (255, 0, 0), bordeaux, blanc)
 
         pygame.display.flip()
 
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button < 4:
-                if bouton_retour.collidepoint(event.pos):
-                    pygame.mouse.set_visible(False)
-                    return "continuer"
-                for bouton, texte, _ in boutons:
-                    if bouton.collidepoint(event.pos):
-                        if texte == "Continuer":
-                            pygame.mouse.set_visible(False)
-                            return "continuer"
-                        elif texte == "Recommencer":
-                            return "recommencer"
-                        elif texte == "Paramètres":
-                            afficher_parametres()
-                        elif texte == "Menu Principal":
-                            return "menu"
-                        elif texte == "Quitter":
-                            pygame.quit()
-                            sys.exit()
+            result = handle_event(event, boutons)
+            if result == "nouvelle_partie":
+                return
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    return
+def afficher_menu_pause():
+    pygame.mouse.set_visible(True)  # Montre le curseur dans le menu pause
+    global resolution_index, largeur, hauteur, fenetre
 
-# Placer cette fonction après les autres définitions de fonctions et avant la boucle principale
+    # Charger l'image de fond
+    fond = pygame.image.load(fond_1)
+    fond = pygame.transform.scale(
+        fond, (largeur, hauteur)
+    )  # Ajuster la taille de l'image de fond
+
+    while True:
+        fenetre.blit(fond, (0, 0))
+
+        # Titre du menu pause
+        titre = pygame.font.Font(font_november, 100).render(nom, True, blanc)
+        titre_rect = titre.get_rect(center=(largeur // 2, hauteur // 6))
+        fenetre.blit(titre, titre_rect)
+
+        # Centrer les boutons
+        espace_boutton = 120  # Espacement régulier entre les boutons
+        y_depart = hauteur // 3
+        boutons = [
+            (
+                pygame.Rect(largeur // 2 - 250, y_depart, 500, 90),
+                "Continuer",
+                40
+            ),
+            (
+                pygame.Rect(largeur // 2 - 250, y_depart + espace_boutton, 500, 90),
+                "Recommencer",
+                40,
+            ),
+            (
+                pygame.Rect(largeur // 2 - 250, y_depart + espace_boutton * 2, 500, 90),
+                "Paramètres",
+                40,
+            ),
+            (
+                pygame.Rect(largeur // 2 - 250, y_depart + espace_boutton * 3, 500, 90),
+                "Menu Principal",
+                40,
+            ),
+            (
+                pygame.Rect(largeur // 2 - 250, y_depart + espace_boutton * 4, 500, 90),
+                "Quitter",
+                40,
+            ),
+        ]
+
+        souris_x, souris_y = pygame.mouse.get_pos()
+
+        for bouton, texte, taille_texte in boutons:
+            draw_button(fenetre, bouton, texte, pygame.font.Font(font_helpme, taille_texte), (255, 0, 0), bordeaux, blanc)
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            result = handle_event(event, boutons)
+            if result in ["continuer", "recommencer", "menu"]:
+                return result
+            if result == "escape":
+                return
 
 
+# Afficher le compteur de clés
 def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
     # Position du compteur (coin supérieur droit)
     marge = 20
@@ -793,7 +889,7 @@ def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
         largeur - (marge + taille_icone + 80),
         marge,
         taille_icone + 80,
-        taille_icone + 10
+        taille_icone + 10,
     )
     pygame.draw.rect(surface, bordeaux, fond_rect)
     pygame.draw.rect(surface, blanc, fond_rect, 2)  # Bordure blanche
@@ -803,7 +899,7 @@ def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
         fond_rect.x + 5,
         fond_rect.y + (fond_rect.height - taille_icone) // 2,
         taille_icone,
-        taille_icone
+        taille_icone,
     )
     pygame.draw.rect(surface, cle, icone_cle)
 
@@ -811,16 +907,13 @@ def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
     texte = f"{cles_collectees}/{nombre_cles_total}"
     police = pygame.font.Font(None, 36)
     surface_texte = police.render(texte, True, blanc)
-
-    # Calculer la position centrée du texte
     pos_texte_x = icone_cle.right + espacement
     pos_texte_y = fond_rect.y + (fond_rect.height - surface_texte.get_height()) // 2
 
     surface.blit(surface_texte, (pos_texte_x, pos_texte_y))
 
-# Modifier la fonction pour dessiner l'inventaire
 
-
+# Afficher l'inventaire
 def dessiner_inventaire(surface):
     # Position et taille de l'inventaire
     inventaire_x = 30
@@ -830,7 +923,9 @@ def dessiner_inventaire(surface):
     nombre_cases = 5  # Nombre total de cases dans l'inventaire
 
     # Dessiner les cases d'inventaire
-    for i in range(nombre_cases):  # Utiliser nombre_cases au lieu d'une valeur codée en dur
+    for i in range(
+        nombre_cases
+    ):  # Utiliser nombre_cases au lieu d'une valeur codée en dur
         x = inventaire_x + (case_taille + espacement) * i
         rect = pygame.Rect(x, inventaire_y, case_taille, case_taille)
 
@@ -846,198 +941,241 @@ def dessiner_inventaire(surface):
             pygame.draw.rect(surface, gris, rect, 1)  # Bordure grise fine
 
 
+# Afficher les paramètres
 def afficher_parametres():
-    global resolution_index, largeur, hauteur, fenetre, crosshair_size_index, crosshair_style_index, crosshair_thickness_index, is_fullscreen, show_fps, volume
-    
-    selected_section = 0  # 0 = Display, 1 = Crosshair, 2 = Sound
+    global resolution_index, largeur, hauteur, fenetre, index_taille_reticule, index_type_reticule, index_epaisseur_reticule, plein_ecran, montrer_fps, volume
+
+    selected_section = 0  # 0 = Affichage, 1 = Réticule, 2 = Son
     sections = ["Affichage", "Réticule", "Son"]
-    
-    # Add these variables at the start of the function
+
     slider_rect = pygame.Rect(0, 0, 200, 10)
-    slider_pos = CROSSHAIR_SIZES[crosshair_size_index]
-    thickness_slider_rect = pygame.Rect(0, 0, 200, 10)  # Define thickness_slider_rect here
-    thickness_slider_pos = CROSSHAIR_THICKNESSES[crosshair_thickness_index]
-    volume_slider_rect = pygame.Rect(0, 0, 200, 10)  # Define volume_slider_rect here
-    volume_slider_pos = volume * 100  # Convert volume to percentage
-    typing_active = False
-    text_input = str(slider_pos)
-    thickness_text_input = str(thickness_slider_pos)
-    volume_text_input = str(int(volume_slider_pos))
-    dragging_slider = False  # Initialize dragging_slider variable
-    dragging_thickness_slider = False  # Initialize dragging_thickness_slider variable
-    dragging_volume_slider = False  # Initialize dragging_volume_slider variable
-    
+    slider_pos = tailles_reticule[index_taille_reticule]
+    slider_rect_epaisseur = pygame.Rect(0, 0, 200, 10)
+    slider_pos_epaisseur = epaisseur_reticule[index_epaisseur_reticule]
+    slider_rect_volume = pygame.Rect(0, 0, 200, 10)
+    slider_pos_volume = volume * 100  # Convertit le volume en pourcentage
+    peut_ecrire = False
+    texte_parametre = str(slider_pos)
+    texte_epaisseur = str(slider_pos_epaisseur)
+    texte_volume = str(int(slider_pos_volume))
+    glisse_slider = False
+    glisse_slider_epaisseur = False
+    glisse_slider_volume = False
+
     while True:
         fenetre.fill(noir)
-        center_x = largeur // 2  # Move this line here, before any section checks
+        center_x = largeur // 2
 
-        bouton_retour = pygame.Rect(20, 20, 200, 60)  # Made wider again to fit text
-        if bouton_retour.collidepoint(pygame.mouse.get_pos()):
-            couleur_retour = (255, 0, 0)
-            bouton_retour = bouton_retour.inflate(20, 20)
-        else:
-            couleur_retour = bordeaux
-        bords_arrondis(fenetre, couleur_retour, bouton_retour, 15)
-        
-        # Draw arrow and text separately
-        texte_arrow = pygame.font.Font("./assets/font/Arrows.ttf", 40).render("R", True, blanc)
-        texte_retour = pygame.font.Font("./assets/font/HelpMe.ttf", 30).render("Retour", True, blanc)
-        
-        # Position arrow and text
-        fenetre.blit(texte_arrow, (bouton_retour.x + 15, bouton_retour.centery - texte_arrow.get_height() // 2))
-        fenetre.blit(texte_retour, (bouton_retour.x + 45, bouton_retour.centery - texte_retour.get_height() // 2))
+        # Bouton de retour
+        bouton_retour = pygame.Rect(20, 20, 200, 60)
+        draw_button(fenetre, bouton_retour, " Retour", pygame.font.Font(font_helpme, 30), (255, 0, 0), bordeaux, blanc, icon_text="B", icon_font=pygame.font.Font(font_arrows, 30))
 
-        # Center sections at the top
+        # Centrer les sections
         section_total_width = sum([200 for _ in sections])
         section_start_x = (largeur - section_total_width) // 2
 
-        # Draw sections at the top, lowered by 100 pixels
+        # Afficher les sections
         for i, section in enumerate(sections):
             color = blanc if i == selected_section else gris
             texte = pygame.font.Font(None, 40).render(section, True, color)
             text_rect = texte.get_rect(center=(section_start_x + i * 200 + 100, 150))
             fenetre.blit(texte, text_rect)
 
-        # Display Settings Section
+        # Afficher les paramètres pour la section choisie
         if selected_section == 0:
-            # Resolutions list, lowered by 100 pixels
-            for i, (width, height) in enumerate(REsolUTIONS):
+            # Liste des résolutions
+            for i, (width, height) in enumerate(resolutions):
                 resolution_texte = f"{width} x {height}"
-                if is_fullscreen:
-                    color = (100, 100, 100)  # Dark gray for disabled state
+                if plein_ecran:
+                    color = (100, 100, 100)  # Grisé pour les résolutions non disponibles en plein écran
                 else:
                     color = blanc if i == resolution_index else gris
                 texte = pygame.font.Font(None, 40).render(resolution_texte, True, color)
                 text_rect = texte.get_rect(center=(largeur // 2, 250 + i * 50))
                 fenetre.blit(texte, text_rect)
-            
-            # Fullscreen toggle, lowered by 100 pixels
-            fullscreen_text = "Plein écran: " + ("Oui" if is_fullscreen else "Non")
-            color = blanc if is_fullscreen else gris
+
+            # Boutton pour basculer en plein écran
+            fullscreen_text = "Plein écran: " + ("Oui" if plein_ecran else "Non")
+            color = blanc if plein_ecran else gris
             texte = pygame.font.Font(None, 40).render(fullscreen_text, True, color)
-            text_rect = texte.get_rect(center=(largeur // 2, 250 + len(REsolUTIONS) * 50))
-            fenetre.blit(texte, text_rect)
-            
-            # FPS counter toggle, lowered by 100 pixels
-            fps_text = "Afficher les FPS: " + ("Oui" if show_fps else "Non")
-            color = blanc if show_fps else gris
-            texte = pygame.font.Font(None, 40).render(fps_text, True, color)
-            text_rect = texte.get_rect(center=(largeur // 2, 250 + (len(REsolUTIONS) + 1) * 50))
+            text_rect = texte.get_rect(
+                center=(largeur // 2, 250 + len(resolutions) * 50)
+            )
             fenetre.blit(texte, text_rect)
 
-        # Crosshair Settings Section
+            # Bouton pour afficher les FPS
+            fps_text = "Afficher les FPS: " + ("Oui" if montrer_fps else "Non")
+            color = blanc if montrer_fps else gris
+            texte = pygame.font.Font(None, 40).render(fps_text, True, color)
+            text_rect = texte.get_rect(
+                center=(largeur // 2, 250 + (len(resolutions) + 1) * 50)
+            )
+            fenetre.blit(texte, text_rect)
+
+        # Paramètres du réticule
         elif selected_section == 1:
             center_x = largeur // 2
             preview_x = center_x
 
-            # Draw "Taille" text and controls, lowered by 100 pixels
+            # Afficher le texte "Taille" et les paramètres
             texte = pygame.font.Font(None, 40).render("Taille:", True, blanc)
             text_rect = texte.get_rect(center=(center_x - 150, 250))
             fenetre.blit(texte, text_rect)
 
-            # Draw slider (grayed out if "Aucun" is selected), lowered by 100 pixels
             slider_rect.centerx = center_x
-            slider_rect.centery = 300  # Move slider below the text
-            slider_color = (50, 50, 50) if CROSSHAIR_STYLES[crosshair_style_index] == "Aucun" else gris
+            slider_rect.centery = 300
+            slider_color = (
+                (50, 50, 50) if types_reticule[index_type_reticule] == "Aucun" else gris
+            )
             pygame.draw.rect(fenetre, slider_color, slider_rect)
-            
-            # Draw slider handle
+
+            # Dessiner le curseur du slider
             handle_pos = slider_rect.left + (slider_pos - 1) * (slider_rect.width / 20)
-            if CROSSHAIR_STYLES[crosshair_style_index] != "Aucun":
+            if types_reticule[index_type_reticule] != "Aucun":
                 pygame.draw.circle(fenetre, blanc, (handle_pos, slider_rect.centery), 8)
-            
-            # Draw text input (without border), lowered by 100 pixels
+
+            # Afficher le texte de la taille du réticule
             font = pygame.font.Font(None, 40)
-            text_surface = font.render(text_input, True, blanc if CROSSHAIR_STYLES[crosshair_style_index] != "Aucun" else (50, 50, 50))
+            text_surface = font.render(
+                texte_parametre,
+                True,
+                (
+                    blanc
+                    if types_reticule[index_type_reticule] != "Aucun"
+                    else (50, 50, 50)
+                ),
+            )
             text_rect = text_surface.get_rect(center=(center_x + 150, 300))
             fenetre.blit(text_surface, text_rect)
 
-            # Draw "Épaisseur" text and controls, lowered by 100 pixels
-            thickness_texte = pygame.font.Font(None, 40).render("Épaisseur:", True, blanc)
+            # Afficher le texte "Épaisseur" et les paramètres
+            thickness_texte = pygame.font.Font(None, 40).render(
+                "Épaisseur:", True, blanc
+            )
             thickness_text_rect = thickness_texte.get_rect(center=(center_x - 150, 370))
             fenetre.blit(thickness_texte, thickness_text_rect)
 
-            # Draw thickness slider (grayed out if "Point" or "Aucun" is selected), lowered by 100 pixels
-            thickness_slider_rect.centerx = center_x
-            thickness_slider_rect.centery = 420  # Move thickness slider below the text
-            thickness_slider_color = (50, 50, 50) if CROSSHAIR_STYLES[crosshair_style_index] != "Croix" else gris
-            pygame.draw.rect(fenetre, thickness_slider_color, thickness_slider_rect)
-            
-            # Draw thickness slider handle
-            thickness_handle_pos = thickness_slider_rect.left + (thickness_slider_pos - 1) * (thickness_slider_rect.width / 4)
-            if CROSSHAIR_STYLES[crosshair_style_index] == "Croix":
-                pygame.draw.circle(fenetre, blanc, (thickness_handle_pos, thickness_slider_rect.centery), 8)
-            
-            # Draw thickness text input (without border), lowered by 100 pixels
-            thickness_text_surface = font.render(thickness_text_input, True, blanc if CROSSHAIR_STYLES[crosshair_style_index] == "Croix" else (50, 50, 50))
-            thickness_text_rect = thickness_text_surface.get_rect(center=(center_x + 150, 420))
+            # Dessiner le slider d'épaisseur
+            slider_rect_epaisseur.centerx = center_x
+            slider_rect_epaisseur.centery = 420  # Move thickness slider below the text
+            thickness_slider_color = (
+                (50, 50, 50) if types_reticule[index_type_reticule] != "Croix" else gris
+            )
+            pygame.draw.rect(fenetre, thickness_slider_color, slider_rect_epaisseur)
+
+            # Dessiner le curseur du slider d'épaisseur
+            thickness_handle_pos = slider_rect_epaisseur.left + (
+                slider_pos_epaisseur - 1
+            ) * (slider_rect_epaisseur.width / 4)
+            if types_reticule[index_type_reticule] == "Croix":
+                pygame.draw.circle(
+                    fenetre,
+                    blanc,
+                    (thickness_handle_pos, slider_rect_epaisseur.centery),
+                    8,
+                )
+
+            # Dessiner le texte de l'épaisseur du réticule
+            thickness_text_surface = font.render(
+                texte_epaisseur,
+                True,
+                (
+                    blanc
+                    if types_reticule[index_type_reticule] == "Croix"
+                    else (50, 50, 50)
+                ),
+            )
+            thickness_text_rect = thickness_text_surface.get_rect(
+                center=(center_x + 150, 420)
+            )
             fenetre.blit(thickness_text_surface, thickness_text_rect)
 
-            # Draw "Style" text and styles, lowered by 100 pixels
+            # Dessiner le texte "Style" et les paramètres
             style_text = pygame.font.Font(None, 40).render("Style:", True, blanc)
             style_rect = style_text.get_rect(center=(center_x - 150, 490))
             fenetre.blit(style_text, style_rect)
 
-            # Crosshair style selection, lowered by 100 pixels
-            for i, style in enumerate(CROSSHAIR_STYLES):
-                color = blanc if i == crosshair_style_index else gris
+            # Choix du type de réticule
+            for i, style in enumerate(types_reticule):
+                color = blanc if i == index_type_reticule else gris
                 texte = pygame.font.Font(None, 40).render(style, True, color)
                 text_rect = texte.get_rect(center=(center_x, 490 + i * 50))
                 fenetre.blit(texte, text_rect)
 
-            # Add preview section with bigger gap, lowered by 100 pixels
-            preview_y = 700  # Increased from 400
+            # Aperçu du réticule
+            preview_y = 700
             preview_text = pygame.font.Font(None, 40).render("Aperçu", True, blanc)
             preview_text_rect = preview_text.get_rect(center=(center_x, preview_y - 50))
             fenetre.blit(preview_text, preview_text_rect)
-
-            # Preview box, lowered by 100 pixels
             preview_size = 150
             border_padding = 10
-            outer_rect = pygame.Rect(preview_x - preview_size//2 - border_padding, 
-                                   preview_y - preview_size//2 - border_padding,
-                                   preview_size + border_padding*2, 
-                                   preview_size + border_padding*2)
+            outer_rect = pygame.Rect(
+                preview_x - preview_size // 2 - border_padding,
+                preview_y - preview_size // 2 - border_padding,
+                preview_size + border_padding * 2,
+                preview_size + border_padding * 2,
+            )
             pygame.draw.rect(fenetre, gris, outer_rect)
-            preview_rect = pygame.Rect(preview_x - preview_size//2, preview_y - preview_size//2, 
-                                     preview_size, preview_size)
+            preview_rect = pygame.Rect(
+                preview_x - preview_size // 2,
+                preview_y - preview_size // 2,
+                preview_size,
+                preview_size,
+            )
             pygame.draw.rect(fenetre, sol, preview_rect)
             pygame.draw.rect(fenetre, blanc, preview_rect, 1)
 
-            # Draw crosshair preview
-            if CROSSHAIR_STYLES[crosshair_style_index] == "Croix":
-                pygame.draw.line(fenetre, blanc, (preview_x - slider_pos, preview_y), 
-                               (preview_x + slider_pos, preview_y), int(thickness_slider_pos))
-                pygame.draw.line(fenetre, blanc, (preview_x, preview_y - slider_pos), 
-                               (preview_x, preview_y + slider_pos), int(thickness_slider_pos))
-            elif CROSSHAIR_STYLES[crosshair_style_index] == "Point":
+            # Dessiner l'appercu du réticule
+            if types_reticule[index_type_reticule] == "Croix":
+                pygame.draw.line(
+                    fenetre,
+                    blanc,
+                    (preview_x - slider_pos, preview_y),
+                    (preview_x + slider_pos, preview_y),
+                    int(slider_pos_epaisseur),
+                )
+                pygame.draw.line(
+                    fenetre,
+                    blanc,
+                    (preview_x, preview_y - slider_pos),
+                    (preview_x, preview_y + slider_pos),
+                    int(slider_pos_epaisseur),
+                )
+            elif types_reticule[index_type_reticule] == "Point":
                 pygame.draw.circle(fenetre, blanc, (preview_x, preview_y), slider_pos)
 
-        # Sound Settings Section
+        # Paramètres du son
         elif selected_section == 2:
             center_x = largeur // 2
 
-            # Draw "Volume" text and controls, lowered by 100 pixels
+            # Afficher le texte "Volume" et les paramètres
             texte = pygame.font.Font(None, 40).render("Volume:", True, blanc)
             text_rect = texte.get_rect(center=(center_x - 150, 250))
             fenetre.blit(texte, text_rect)
 
-            # Draw volume slider, lowered by 100 pixels
-            volume_slider_rect.centerx = center_x
-            volume_slider_rect.centery = 300  # Move slider below the text
-            pygame.draw.rect(fenetre, gris, volume_slider_rect)
-            
-            # Draw volume slider handle
-            volume_handle_pos = volume_slider_rect.left + (volume_slider_pos / 100) * volume_slider_rect.width
-            pygame.draw.circle(fenetre, blanc, (volume_handle_pos, volume_slider_rect.centery), 8)
-            
-            # Draw volume text input (without border), lowered by 100 pixels
+            # Dessiner le slider de volume
+            slider_rect_volume.centerx = center_x
+            slider_rect_volume.centery = 300  # Move slider below the text
+            pygame.draw.rect(fenetre, gris, slider_rect_volume)
+
+            # Dessiner le curseur du slider de volume
+            volume_handle_pos = (
+                slider_rect_volume.left
+                + (slider_pos_volume / 100) * slider_rect_volume.width
+            )
+            pygame.draw.circle(
+                fenetre, blanc, (volume_handle_pos, slider_rect_volume.centery), 8
+            )
+
+            # Dessiner le texte du volume
             font = pygame.font.Font(None, 40)
-            volume_text_surface = font.render(volume_text_input, True, blanc)
-            volume_text_rect = volume_text_surface.get_rect(center=(center_x + 150, 300))
+            volume_text_surface = font.render(texte_volume, True, blanc)
+            volume_text_rect = volume_text_surface.get_rect(
+                center=(center_x + 150, 300)
+            )
             fenetre.blit(volume_text_surface, volume_text_rect)
 
-        # Handle events
+        # Gérer les événements
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -1047,141 +1185,211 @@ def afficher_parametres():
                     return
                 elif event.key == pygame.K_LEFT and selected_section > 0:
                     selected_section -= 1
-                elif event.key == pygame.K_RIGHT and selected_section < len(sections) - 1:
+                elif (
+                    event.key == pygame.K_RIGHT and selected_section < len(sections) - 1
+                ):
                     selected_section += 1
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = event.pos
-                # Section selection
-                if mouse_y < 200:  # Click in the section headers area, lowered by 100 pixels
+                # Choix de la section
+                if (
+                    mouse_y < 200
+                ):  # Click in the section headers area, lowered by 100 pixels
                     for i in range(len(sections)):
-                        if section_start_x + i * 200 <= mouse_x <= section_start_x + (i + 1) * 200:
+                        if (
+                            section_start_x + i * 200
+                            <= mouse_x
+                            <= section_start_x + (i + 1) * 200
+                        ):
                             selected_section = i
 
-                elif selected_section == 0:  # Display settings
-                    # Resolution selection - only process if not in fullscreen
-                    if not is_fullscreen:
-                        for i in range(len(REsolUTIONS)):
-                            if 250 <= mouse_y <= 250 + len(REsolUTIONS) * 50:  # Lowered by 100 pixels
+                elif selected_section == 0:  # Paramètres d'affichage
+                    # Choix de la résolution
+                    if not plein_ecran:
+                        for i in range(len(resolutions)):
+                            if (250 <= mouse_y <= 250 + len(resolutions) * 50):
                                 click_y = (mouse_y - 250) // 50
-                                if click_y < len(REsolUTIONS):
+                                if click_y < len(resolutions):
                                     resolution_index = click_y
-                                    largeur, hauteur = REsolUTIONS[resolution_index]
-                                    fenetre = pygame.display.set_mode((largeur, hauteur), pygame.RESIZABLE)
-                                    os.environ['SDL_VIDEO_CENTERED'] = '1'
-                    
-                    # Fullscreen toggle, lowered by 100 pixels
-                    if 250 + len(REsolUTIONS) * 50 - 25 <= mouse_y <= 250 + len(REsolUTIONS) * 50 + 25:
-                        is_fullscreen = not is_fullscreen
-                        flags = pygame.FULLSCREEN if is_fullscreen else pygame.RESIZABLE
+                                    largeur, hauteur = resolutions[resolution_index]
+                                    fenetre = pygame.display.set_mode(
+                                        (largeur, hauteur), pygame.RESIZABLE
+                                    )
+                                    os.environ["SDL_VIDEO_CENTERED"] = "1"
+
+                    # Bouton pour basculer en plein écran
+                    if (
+                        250 + len(resolutions) * 50 - 25
+                        <= mouse_y
+                        <= 250 + len(resolutions) * 50 + 25
+                    ):
+                        plein_ecran = not plein_ecran
+                        flags = pygame.FULLSCREEN if plein_ecran else pygame.RESIZABLE
                         fenetre = pygame.display.set_mode((largeur, hauteur), flags)
-                    
-                    # FPS counter toggle, lowered by 100 pixels
-                    if 250 + (len(REsolUTIONS) + 1) * 50 - 25 <= mouse_y <= 250 + (len(REsolUTIONS) + 1) * 50 + 25:
-                        show_fps = not show_fps
 
-            if selected_section == 1:  # Crosshair settings
+                    # Bouton pour afficher les FPS
+                    if (
+                        250 + (len(resolutions) + 1) * 50 - 25
+                        <= mouse_y
+                        <= 250 + (len(resolutions) + 1) * 50 + 25
+                    ):
+                        montrer_fps = not montrer_fps
+
+                # Bouton de retour
+                if bouton_retour.collidepoint(event.pos):
+                    return
+
+            if selected_section == 1:  # Paramètres du réticule
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_x, mouse_y = event.pos
-                    # Handle slider click/drag
-                    if slider_rect.collidepoint(event.pos) and CROSSHAIR_STYLES[crosshair_style_index] != "Aucun":
-                        dragging_slider = True
-                        # Update slider position immediately on click
-                        slider_pos = (mouse_x - slider_rect.left) / slider_rect.width * 20 + 1
+                    # Gérer le clic et le glissement du slider
+                    if (
+                        slider_rect.collidepoint(event.pos)
+                        and types_reticule[index_type_reticule] != "Aucun"
+                    ):
+                        glisse_slider = True
+                        # Mettre à jour la position du curseur immédiatement sur le clic
+                        slider_pos = (
+                            mouse_x - slider_rect.left
+                        ) / slider_rect.width * 20 + 1
                         slider_pos = max(1, min(20, slider_pos))
-                        text_input = str(int(slider_pos))
-                    # Handle thickness slider click/drag
-                    if thickness_slider_rect.collidepoint(event.pos) and CROSSHAIR_STYLES[crosshair_style_index] == "Croix":
-                        dragging_thickness_slider = True
-                        # Update thickness slider position immediately on click
-                        thickness_slider_pos = (mouse_x - thickness_slider_rect.left) / thickness_slider_rect.width * 4 + 1
-                        thickness_slider_pos = max(1, min(5, thickness_slider_pos))
-                        thickness_text_input = str(int(thickness_slider_pos))
-                    # Style selection, lowered by 100 pixels
-                    for i, style in enumerate(CROSSHAIR_STYLES):
+                        texte_parametre = str(int(slider_pos))
+                    # Gérer le clic et le glissement du slider d'épaisseur
+                    if (
+                        slider_rect_epaisseur.collidepoint(event.pos)
+                        and types_reticule[index_type_reticule] == "Croix"
+                    ):
+                        glisse_slider_epaisseur = True
+                        # Mettre à jour la position du curseur d'épaisseur immédiatement sur le clic
+                        slider_pos_epaisseur = (
+                            mouse_x - slider_rect_epaisseur.left
+                        ) / slider_rect_epaisseur.width * 4 + 1
+                        slider_pos_epaisseur = max(1, min(5, slider_pos_epaisseur))
+                        texte_epaisseur = str(int(slider_pos_epaisseur))
+                    # Sélectionner le type de réticule
+                    for i, style in enumerate(types_reticule):
                         style_y = 490 + i * 50
-                        if abs(mouse_x - center_x) < 100 and abs(mouse_y - style_y) < 25:
-                            crosshair_style_index = i
+                        if (
+                            abs(mouse_x - center_x) < 100
+                            and abs(mouse_y - style_y) < 25
+                        ):
+                            index_type_reticule = i
                 elif event.type == pygame.MOUSEBUTTONUP:
-                    dragging_slider = False
-                    dragging_thickness_slider = False
+                    glisse_slider = False
+                    glisse_slider_epaisseur = False
                 elif event.type == pygame.MOUSEMOTION:
                     mouse_x = event.pos[0]
-                    if dragging_slider and slider_rect.left <= mouse_x <= slider_rect.right:
-                        slider_pos = (mouse_x - slider_rect.left) / slider_rect.width * 20 + 1
+                    if (
+                        glisse_slider
+                        and slider_rect.left <= mouse_x <= slider_rect.right
+                    ):
+                        slider_pos = (
+                            mouse_x - slider_rect.left
+                        ) / slider_rect.width * 20 + 1
                         slider_pos = max(1, min(20, slider_pos))
-                        text_input = str(int(slider_pos))
-                    if dragging_thickness_slider and thickness_slider_rect.left <= mouse_x <= thickness_slider_rect.right:
-                        thickness_slider_pos = (mouse_x - thickness_slider_rect.left) / thickness_slider_rect.width * 4 + 1
-                        thickness_slider_pos = max(1, min(5, thickness_slider_pos))
-                        thickness_text_input = str(int(thickness_slider_pos))
+                        texte_parametre = str(int(slider_pos))
+                    if (
+                        glisse_slider_epaisseur
+                        and slider_rect_epaisseur.left
+                        <= mouse_x
+                        <= slider_rect_epaisseur.right
+                    ):
+                        slider_pos_epaisseur = (
+                            mouse_x - slider_rect_epaisseur.left
+                        ) / slider_rect_epaisseur.width * 4 + 1
+                        slider_pos_epaisseur = max(1, min(5, slider_pos_epaisseur))
+                        texte_epaisseur = str(int(slider_pos_epaisseur))
 
-            if selected_section == 2:  # Sound settings
+            if selected_section == 2:  # Paramètres du son
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_x, mouse_y = event.pos
-                    # Handle volume slider click/drag
-                    if volume_slider_rect.collidepoint(event.pos):
-                        dragging_volume_slider = True
-                        # Update volume slider position immediately on click
-                        volume_slider_pos = (mouse_x - volume_slider_rect.left) / volume_slider_rect.width * 100
-                        volume_slider_pos = max(0, min(100, volume_slider_pos))
-                        volume_text_input = str(int(volume_slider_pos))
-                        volume = volume_slider_pos / 100
+                    # Gérer le clic et le glissement du slider de volume
+                    if slider_rect_volume.collidepoint(event.pos):
+                        glisse_slider_volume = True
+                        # Mettre à jour la position du curseur de volume immédiatement sur le clic
+                        slider_pos_volume = (
+                            (mouse_x - slider_rect_volume.left)
+                            / slider_rect_volume.width
+                            * 100
+                        )
+                        slider_pos_volume = max(0, min(100, slider_pos_volume))
+                        texte_volume = str(int(slider_pos_volume))
+                        volume = slider_pos_volume / 100
                         pygame.mixer.music.set_volume(volume)
                 elif event.type == pygame.MOUSEBUTTONUP:
-                    dragging_volume_slider = False
+                    glisse_slider_volume = False
                 elif event.type == pygame.MOUSEMOTION:
                     mouse_x = event.pos[0]
-                    if dragging_volume_slider and volume_slider_rect.left <= mouse_x <= volume_slider_rect.right:
-                        volume_slider_pos = (mouse_x - volume_slider_rect.left) / volume_slider_rect.width * 100
-                        volume_slider_pos = max(0, min(100, volume_slider_pos))
-                        volume_text_input = str(int(volume_slider_pos))
-                        volume = volume_slider_pos / 100
+                    if (
+                        glisse_slider_volume
+                        and slider_rect_volume.left
+                        <= mouse_x
+                        <= slider_rect_volume.right
+                    ):
+                        slider_pos_volume = (
+                            (mouse_x - slider_rect_volume.left)
+                            / slider_rect_volume.width
+                            * 100
+                        )
+                        slider_pos_volume = max(0, min(100, slider_pos_volume))
+                        texte_volume = str(int(slider_pos_volume))
+                        volume = slider_pos_volume / 100
                         pygame.mixer.music.set_volume(volume)
 
-        # Update crosshair size from slider
-        crosshair_size_index = min(len(CROSSHAIR_SIZES) - 1, 
-                                 max(0, int((slider_pos - 1) / 5)))
-        # Update crosshair thickness from slider
-        crosshair_thickness_index = min(len(CROSSHAIR_THICKNESSES) - 1, 
-                                      max(0, int((thickness_slider_pos - 1) / 1)))
+        # Mettre à jour l'affichage du réticule par rapport slider
+        index_taille_reticule = min(
+            len(tailles_reticule) - 1, max(0, int((slider_pos - 1) / 5))
+        )
+        # Mettre à jour l'affichage de l'épaisseur du réticule par rapport slider
+        index_epaisseur_reticule = min(
+            len(epaisseur_reticule) - 1, max(0, int((slider_pos_epaisseur - 1) / 1))
+        )
 
         pygame.display.flip()
 
-# Add this function to draw the FPS counter
+
+# Afficher le compteur de FPS
 def dessiner_fps(surface, clock):
-    if show_fps:
+    if montrer_fps:
         fps = int(clock.get_fps())
         police = pygame.font.Font(None, 36)
         surface_texte = police.render(f"FPS: {fps}", True, blanc)
         surface.blit(surface_texte, (10, 10))
 
-# Add these functions after other function definitions
 
-
+# Musique du menu
 def musique_menu():
-    pygame.mixer.music.load("./assets/music/S.T.A.L.K.E.R..mp3")  # Ensure the path is correct
+    pygame.mixer.music.load(son_menu)
     pygame.mixer.music.set_volume(0.5)
     pygame.mixer.music.play(-1)
 
 
+# Musique de fond
 def musique_fond():
-    pygame.mixer.music.load("./assets/music/Amnesia-02.mp3")
+    pygame.mixer.music.load(son_fond)
     pygame.mixer.music.set_volume(0.5)
     pygame.mixer.music.play(-1)
 
 
+# Fonction pour arreter la musique
 def arreter_musique():
     pygame.mixer.music.stop()
 
+
+# Afficher l'écran de transition de niveau
 def afficher_transition_niveau(niveau):
     texte_niveau = pygame.font.Font(None, 150).render(f"Niveau {niveau}", True, blanc)
     texte_niveau_rect = texte_niveau.get_rect(center=(largeur // 2, hauteur // 2 - 75))
-    
-    texte_sous_titre = pygame.font.Font(None, 100).render("Dans les abysses", True, blanc)
-    texte_sous_titre_rect = texte_sous_titre.get_rect(center=(largeur // 2, hauteur // 2 + 75))
-    
-    # Fade in
+
+    texte_sous_titre = pygame.font.Font(None, 100).render(
+        "Dans les abysses", True, blanc
+    )
+    texte_sous_titre_rect = texte_sous_titre.get_rect(
+        center=(largeur // 2, hauteur // 2 + 75)
+    )
+
+    # Animation de fade in
     for alpha in range(0, 256, 5):
         fenetre.fill(noir)
         texte_niveau.set_alpha(alpha)
@@ -1190,11 +1398,11 @@ def afficher_transition_niveau(niveau):
         fenetre.blit(texte_sous_titre, texte_sous_titre_rect)
         pygame.display.flip()
         pygame.time.delay(10)
-    
-    # Wait for 3 seconds
+
+    # Attendre 3 secondes
     pygame.time.delay(3000)
-    
-    # Fade out
+
+    # Animation de fade out
     for alpha in range(255, -1, -5):
         fenetre.fill(noir)
         texte_niveau.set_alpha(alpha)
@@ -1204,17 +1412,37 @@ def afficher_transition_niveau(niveau):
         pygame.display.flip()
         pygame.time.delay(10)
 
-# Génération objet
-hopital = generer_hopital(nombre_lignes, nombre_colonnes)
-cles = placer_cles(hopital, nombre_cles)
-ennemis = initialiser_ennemis(hopital, nombre_ennemis)
+
+# Génération de la carte, des objets et des ennemis
+jeu = generer_jeu(nombre_lignes, nombre_colonnes)
+cles = placer_cles(jeu, nombre_cles)
+ennemis = initialiser_ennemis(jeu, nombre_ennemis)
+
+
+def dessiner_barre_endurance(surface):
+    # Position et taille de la barre d'endurance
+    largeur_barre = 200
+    hauteur_barre = 20
+    x = 30
+    y = hauteur - 100
+
+    # Calculer la largeur de la barre d'endurance actuelle
+    largeur_actuelle = int((endurance_actuelle / endurance_max) * largeur_barre)
+
+    # Dessiner le fond de la barre
+    pygame.draw.rect(surface, gris_fonce, (x, y, largeur_barre, hauteur_barre))
+    # Dessiner la barre d'endurance actuelle
+    pygame.draw.rect(surface, (0, 255, 0), (x, y, largeur_actuelle, hauteur_barre))
+    # Dessiner la bordure de la barre
+    pygame.draw.rect(surface, blanc, (x, y, largeur_barre, hauteur_barre), 2)
+
 
 # Boucle principale
 afficher_menu()
-pygame.mouse.set_visible(False)  # Hide cursor during gameplay
-musique_fond()  # Start game music
+pygame.mouse.set_visible(False)  # Cache le curseur dans le jeu
+musique_fond()  # Jouer la musique de fond
 
-# Show level transition screen before starting the game
+# Montrer l'écran de transition de niveau avant de commencer le jeu
 afficher_transition_niveau(1)
 
 running = True
@@ -1224,22 +1452,22 @@ while running:
             running = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                pygame.mouse.set_visible(True)  # Show cursor in menu
+                pygame.mouse.set_visible(True)  # Afficher le curseur dans le menu
                 choix = afficher_menu_pause()
-                pygame.mouse.set_visible(False)  # Hide cursor when returning to game
+                pygame.mouse.set_visible(False)  # Cacher le curseur dans le jeu
                 if choix == "recommencer":
-                    hopital = generer_hopital(nombre_lignes, nombre_colonnes)
-                    cles = placer_cles(hopital, nombre_cles)
+                    jeu = generer_jeu(nombre_lignes, nombre_colonnes)
+                    cles = placer_cles(jeu, nombre_cles)
                     joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
                     cles_collectees = 0
-                    ennemis = initialiser_ennemis(hopital, nombre_ennemis)
+                    ennemis = initialiser_ennemis(jeu, nombre_ennemis)
                 elif choix == "menu":
                     # Réinitialiser le jeu
-                    hopital = generer_hopital(nombre_lignes, nombre_colonnes)
-                    cles = placer_cles(hopital, nombre_cles)
+                    jeu = generer_jeu(nombre_lignes, nombre_colonnes)
+                    cles = placer_cles(jeu, nombre_cles)
                     joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
                     cles_collectees = 0
-                    ennemis = initialiser_ennemis(hopital, nombre_ennemis)
+                    ennemis = initialiser_ennemis(jeu, nombre_ennemis)
                     # Retourner au menu
                     afficher_menu()
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -1252,15 +1480,13 @@ while running:
     souris_x, souris_y = pygame.mouse.get_pos()
 
     # Calculer la position du joueur à l'écran
-    joueur_ecran_x = joueur_pos[0] * taille_case - \
-        camera_offset[0] + taille_case // 2
-    joueur_ecran_y = joueur_pos[1] * taille_case - \
-        camera_offset[1] + taille_case // 2
+    joueur_ecran_x = joueur_pos[0] * taille_case - camera_offset[0] + taille_case // 2
+    joueur_ecran_y = joueur_pos[1] * taille_case - camera_offset[1] + taille_case // 2
 
     # Calculer l'angle entre le joueur et la souris
     dx = souris_x - joueur_ecran_x
     dy = souris_y - joueur_ecran_y
-    angle_de_vue = math.degrees(math.atan2(dy, dx))  # Direct angle calculation without smoothing
+    angle_de_vue = math.degrees(math.atan2(dy, dx))
 
     touches = pygame.key.get_pressed()
     nouvelle_pos = joueur_pos[:]
@@ -1282,7 +1508,7 @@ while running:
             dernier_mouvement = temps_actuel
 
     # Vérifie si le déplacement est valide
-    if deplacement_valide(hopital, nouvelle_pos):
+    if deplacement_valide(jeu, nouvelle_pos):
         joueur_pos = nouvelle_pos
 
     # Mise à jour de la caméra pour suivre le joueur
@@ -1293,27 +1519,27 @@ while running:
     if verifier_collision_ennemis(joueur_pos, ennemis):
         if game_over() == "menu":
             # Réinitialiser le jeu
-            hopital = generer_hopital(nombre_lignes, nombre_colonnes)
-            cles = placer_cles(hopital, nombre_cles)
+            jeu = generer_jeu(nombre_lignes, nombre_colonnes)
+            cles = placer_cles(jeu, nombre_cles)
             joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
             cles_collectees = 0
-            ennemis = initialiser_ennemis(hopital, nombre_ennemis)
+            ennemis = initialiser_ennemis(jeu, nombre_ennemis)
             # Retourner au menu
             afficher_menu()
 
     # Dessiner l'hôpital
-    dessiner_hopital(hopital, joueur_pos, camera_offset)
+    dessiner_jeu(jeu, joueur_pos, camera_offset)
 
     # Dessiner l'inventaire
     dessiner_inventaire(fenetre)
 
     # Collecte des clés
-    if hopital[joueur_pos[1]][joueur_pos[0]] == "C":
+    if jeu[joueur_pos[1]][joueur_pos[0]] == "C":
         cles_collectees += 1
-        hopital[joueur_pos[1]][joueur_pos[0]] = " "
+        jeu[joueur_pos[1]][joueur_pos[0]] = " "
 
     # Déplacer les ennemis
-    deplacer_ennemis(hopital, ennemis, joueur_pos)
+    deplacer_ennemis(jeu, ennemis, joueur_pos)
 
     # Dessiner les ennemis
     for ennemi in ennemis:
@@ -1323,41 +1549,56 @@ while running:
         # Calculer la distance entre le joueur et l'ennemi
         dx = ennemi.x - joueur_pos[0]
         dy = ennemi.y - joueur_pos[1]
-        distance = math.sqrt(dx*dx + dy*dy)
+        distance = math.sqrt(dx * dx + dy * dy)
 
         # Vérifier si l'ennemi est dans le cercle proche
         if distance * taille_case <= rayon_vision_proche:
-            if not a_mur_entre(joueur_pos, (ennemi.x, ennemi.y), hopital):
-                pygame.draw.rect(fenetre, ennemis,
-                                 (x, y, taille_case, taille_case))
+            if not a_mur_entre(joueur_pos, (ennemi.x, ennemi.y), jeu):
+                pygame.draw.rect(fenetre, ennemis, (x, y, taille_case, taille_case))
         # Sinon, vérifier s'il est dans le cône de vision
-        elif est_dans_cone(joueur_pos, (ennemi.x, ennemi.y), angle_de_vue, cone_longueur):
-            if not a_mur_entre(joueur_pos, (ennemi.x, ennemi.y), hopital):
-                pygame.draw.rect(fenetre, ennemis,
-                                 (x, y, taille_case, taille_case))
+        elif est_dans_cone(
+            joueur_pos, (ennemi.x, ennemi.y), angle_de_vue, cone_longueur
+        ):
+            if not a_mur_entre(joueur_pos, (ennemi.x, ennemi.y), jeu):
+                pygame.draw.rect(fenetre, ennemis, (x, y, taille_case, taille_case))
 
     # Victoire si le joueur atteint la sortie avec toutes les clés
-    if hopital[joueur_pos[1]][joueur_pos[0]] == "S" and cles_collectees == nombre_cles:
-        arreter_musique()  # Stop game music
+    if jeu[joueur_pos[1]][joueur_pos[0]] == "S" and cles_collectees == nombre_cles:
+        arreter_musique()
         afficher_victoire()
         running = False
 
     # Dessiner le compteur de clés après avoir dessiné tout le reste
     dessiner_compteur_cles(fenetre, cles_collectees, nombre_cles)
 
-    # Draw custom cursor based on selected style
+    # Dessiner le réticule
     if not pygame.mouse.get_visible():
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        size = CROSSHAIR_SIZES[crosshair_size_index]
-        
-        if CROSSHAIR_STYLES[crosshair_style_index] == "Croix":
-            pygame.draw.line(fenetre, blanc, (mouse_x - size, mouse_y), (mouse_x + size, mouse_y), CROSSHAIR_THICKNESSES[crosshair_thickness_index])
-            pygame.draw.line(fenetre, blanc, (mouse_x, mouse_y - size), (mouse_x, mouse_y + size), CROSSHAIR_THICKNESSES[crosshair_thickness_index])
-        elif CROSSHAIR_STYLES[crosshair_style_index] == "Point":
+        size = tailles_reticule[index_taille_reticule]
+
+        if types_reticule[index_type_reticule] == "Croix":
+            pygame.draw.line(
+                fenetre,
+                blanc,
+                (mouse_x - size, mouse_y),
+                (mouse_x + size, mouse_y),
+                epaisseur_reticule[index_epaisseur_reticule],
+            )
+            pygame.draw.line(
+                fenetre,
+                blanc,
+                (mouse_x, mouse_y - size),
+                (mouse_x, mouse_y + size),
+                epaisseur_reticule[index_epaisseur_reticule],
+            )
+        elif types_reticule[index_type_reticule] == "Point":
             pygame.draw.circle(fenetre, blanc, (mouse_x, mouse_y), size)
 
-    # Draw FPS counter
+    # Dessiner le commpteur de FPS
     dessiner_fps(fenetre, horloge)
+
+    # Dessiner la barre d'endurance
+    # dessiner_barre_endurance(fenetre)
 
     pygame.display.flip()
     horloge.tick(60)  # Limiter à 60 FPS

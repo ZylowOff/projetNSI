@@ -9,14 +9,6 @@ from screeninfo import get_monitors  # Ajouter cette importation
 pygame.init()
 pygame.mixer.init()  # Initialize the mixer module
 
-# Charger les musiques
-try:
-    musique_poursuite = pygame.mixer.Sound("C:/Users/luiar/Downloads/projetNSI/OST/outlast_run.mp3")
-    musique_poursuite.set_volume(0.5)  # Ajuster le volume à 50%
-except:
-    print("Erreur lors du chargement de la musique de poursuite")
-    musique_poursuite = None
-
 # Variables pour gérer l'état de la musique
 est_en_poursuite = False
 temps_perdu_vue = 0
@@ -55,7 +47,7 @@ spray = (255, 165, 0)  # Couleur orange pour le spray au poivre
 marron_spray = (139, 69, 19, 100)  # Marron avec transparence
 
 # Load and scale player image
-joueur_img = pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/personnage.png")
+joueur_img = pygame.image.load("./assets/characters/personnage.png")
 joueur = pygame.transform.scale(joueur_img, (taille_case * 1.25, taille_case * 1.25))  # Scale to tile size
 sortie = (0, 255, 0)
 mur = (100, 40, 30)
@@ -729,14 +721,14 @@ def afficher_credits():
         # Draw each credit entry
         for text, size in credits_data:
             if text:  # Only render non-empty strings
-                texte = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/HelpMe.ttf", size).render(text, True, blanc)
+                texte = pygame.font.Font("./assets/font/HelpMe.ttf", size).render(text, True, blanc)
                 texte_rect = texte.get_rect(center=(largeur // 2, current_y))
                 
                 # Only draw if within screen bounds with some margin
                 if -50 <= current_y <= hauteur + 50:
                     # Add glow effect for titles
                     if size == TITLE_SIZE:
-                        glow = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/HelpMe.ttf", size).render(text, True, (100, 100, 100))
+                        glow = pygame.font.Font("./assets/font/HelpMe.ttf", size).render(text, True, (100, 100, 100))
                         glow_rect = glow.get_rect(center=(largeur // 2, current_y))
                         fenetre.blit(glow, (glow_rect.x + 2, glow_rect.y + 2))
                     
@@ -799,11 +791,11 @@ def afficher_menu():
 
     # Charger les différentes couches du fond
     background_layers = [
-        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_1.png"),
-        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_2.png"),
-        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_3.png"),
-        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_4.png"),
-        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_5.png")
+        pygame.image.load("./assets/background/background_1.png"),
+        pygame.image.load("./assets/background/background_2.png"),
+        pygame.image.load("./assets/background/background_3.png"),
+        pygame.image.load("./assets/background/background_4.png"),
+        pygame.image.load("./assets/background/background_5.png")
     ]
     
     # Augmenter encore le facteur d'échelle pour plus de marge de mouvement
@@ -835,7 +827,7 @@ def afficher_menu():
 
         # Reste du code inchangé...
         titre = pygame.font.Font(
-            "C:/Users/luiar/Downloads/projetNSI/November.ttf", 150).render("Echoes of the Hollow", True, blanc)
+            "./assets/font/November.ttf", 150).render("Echoes of the Hollow", True, blanc)
         titre_rect = titre.get_rect(center=(largeur//2, hauteur//6))
         fenetre.blit(titre, titre_rect)
 
@@ -858,7 +850,7 @@ def afficher_menu():
                 couleur = bordeaux
 
             bords_arrondis(fenetre, couleur, bouton, 15)
-            texte_rendu = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/HelpMe.ttf", taille_texte).render(texte, True, blanc)
+            texte_rendu = pygame.font.Font("./assets/font/HelpMe.ttf", taille_texte).render(texte, True, blanc)
             fenetre.blit(texte_rendu, (bouton.centerx - texte_rendu.get_width() // 2,
                                       bouton.centery - texte_rendu.get_height() // 2))
 
@@ -890,7 +882,7 @@ def afficher_menu_pause():
     global resolution_index, largeur, hauteur, fenetre
     
     # Load the background image
-    background = pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_1.png")  # Ensure the path is correct
+    background = pygame.image.load("./assets/background/background_1.png")  # Ensure the path is correct
     background = pygame.transform.scale(background, (largeur, hauteur))  # Scale to fit the window
 
     while True:
@@ -898,7 +890,7 @@ def afficher_menu_pause():
         fenetre.blit(background, (0, 0))
 
         # Title at the top
-        titre = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/November.ttf", 100).render("Echoes of the Hollow", True, blanc)
+        titre = pygame.font.Font("./assets/font/November.ttf", 100).render("Echoes of the Hollow", True, blanc)
         titre_rect = titre.get_rect(center=(largeur // 2, hauteur // 6))
         fenetre.blit(titre, titre_rect)
 
@@ -912,8 +904,8 @@ def afficher_menu_pause():
         bords_arrondis(fenetre, couleur_retour, bouton_retour, 15)
         
         # Draw arrow and text separately
-        texte_arrow = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/Arrows.ttf", 40).render("R", True, blanc)
-        texte_retour = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/HelpMe.ttf", 30).render("Retour", True, blanc)
+        texte_arrow = pygame.font.Font("./assets/font/Arrows.ttf", 40).render("R", True, blanc)
+        texte_retour = pygame.font.Font("./assets/font/HelpMe.ttf", 30).render("Retour", True, blanc)
         
         # Position arrow and text
         fenetre.blit(texte_arrow, (bouton_retour.x + 15, bouton_retour.centery - texte_arrow.get_height() // 2))
@@ -940,7 +932,7 @@ def afficher_menu_pause():
                 couleur = bordeaux
 
             bords_arrondis(fenetre, couleur, bouton, 15)
-            texte_rendu = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/HelpMe.ttf", taille_texte).render(texte, True, blanc)
+            texte_rendu = pygame.font.Font("./assets/font/HelpMe.ttf", taille_texte).render(texte, True, blanc)
             fenetre.blit(texte_rendu, (bouton.centerx - texte_rendu.get_width() // 2,
                                       bouton.centery - texte_rendu.get_height() // 2))
 
@@ -1226,13 +1218,13 @@ def afficher_parametres():
 
 
 def musique_menu():
-    pygame.mixer.music.load("C:/Users/luiar/Downloads/projetNSI/OST/S.T.A.L.K.E.R..mp3")  # Ensure the path is correct
+    pygame.mixer.music.load("./assets/music/S.T.A.L.K.E.R..mp3")  # Ensure the path is correct
     pygame.mixer.music.set_volume(0.5)
     pygame.mixer.music.play(-1)
 
 
 def musique_fond():
-    pygame.mixer.music.load("C:/Users/luiar/Downloads/projetNSI/OST/Amnesia_02.mp3")
+    pygame.mixer.music.load("./assets/music/Amnesia-02.mp3")
     pygame.mixer.music.set_volume(0.5)
     pygame.mixer.music.play(-1)
 
@@ -1340,7 +1332,7 @@ def utiliser_spray(joueur_pos, angle_de_vue, ennemis, hopital):
 # Modifiez la fonction qui démarre la musique d'ambiance
 def demarrer_musique_ambiance():
     try:
-        pygame.mixer.music.load("C:/Users/luiar/Downloads/projetNSI/OST/Amnesia_02.mp3")
+        pygame.mixer.music.load("./assets/music/Amnesia_02.mp3")
         pygame.mixer.music.play(-1)
     except:
         print("Erreur lors du chargement de la musique d'ambiance")

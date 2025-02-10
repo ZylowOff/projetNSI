@@ -26,55 +26,53 @@ ennemis = (255, 0, 0)
 bordeaux = (40, 0, 0)
 
 # Fichiers utilisés dans le jeu
-joueur_img = pygame.image.load(
-    "./assets/characters/personnage.png"
-)  # Importer l'image du joueur
-joueur = pygame.transform.scale(
-    joueur_img, (taille_case * 1.25, taille_case * 1.25)
-)  # Ajuster la taille du joueur
-son_menu = "./assets/music/S.T.A.L.K.E.R..mp3"  # Importer la musique du menu STALKER
-son_fond = "./assets/music/Amnesia-02.mp3"  # Importer la musique de fond Amnesia
-font_helpme = "./assets/font/HelpMe.ttf"  # Importer la police d'écriture HelpMe
-font_november = "./assets/font/November.ttf"  # Importer la police d'écriture November
-font_arrows = "./assets/font/Arrows.ttf"  # Importer la police d'écriture Arrows
-fond_1 = "./assets/background/background_1.png"  # Importer la premiere image de fond
-fond_2 = "./assets/background/background_2.png"  # Importer la deuxième image de fond
-fond_3 = "./assets/background/background_3.png"  # Importer la troisième image de fond
-fond_4 = "./assets/background/background_4.png"  # Importer la quatrième image de fond
-fond_5 = "./assets/background/background_5.png"  # Importer la cinquième image de fond
-# icone = pygame.image.load('icon.png')  # Importer l'icône de la fenêtre
-nom = "Echoes of the Hollow"  # Nom du jeu
+joueur_img = pygame.image.load("./assets/characters/personnage.png")
+joueur = pygame.transform.scale(joueur_img, (taille_case * 1.25, taille_case * 1.25))
+son_menu = "./assets/music/S.T.A.L.K.E.R..mp3"
+son_fond = "./assets/music/Amnesia-02.mp3"
+font_helpme = "./assets/font/HelpMe.ttf"
+font_november = "./assets/font/November.ttf"
+font_arrows = "./assets/font/Arrows.ttf"
+fond_1 = "./assets/background/background_1.png"
+fond_2 = "./assets/background/background_2.png"
+fond_3 = "./assets/background/background_3.png"
+fond_4 = "./assets/background/background_4.png"
+fond_5 = "./assets/background/background_5.png"
+# icone = pygame.image.load('icon.png')
+nom = "Echoes of the Hollow"
 
-plein_ecran = True  # Plein écran par défaut
+plein_ecran = True
 
 # Création de la fenêtre
 fenetre = pygame.display.set_mode(
     (largeur, hauteur), pygame.FULLSCREEN if plein_ecran else pygame.RESIZABLE
 )
-pygame.display.set_caption(nom)  # Nom de la fenêtre
-# pygame.display.set_icon(icone) # Icône de la fenêtre
+pygame.display.set_caption(nom)
+# pygame.display.set_icon(icone)
 
 # Horloge pour contrôler les FPS
 horloge = pygame.time.Clock()
 
 # Paramètres de jeu
-nombre_cles = 3  # Nombre de clés à collecter
-cles_collectees = 0  # Compteur de clés collectées
-nombre_ennemis = 3  # Nombre d'ennemis
-vitesse_ennemis = 0.4  # Vitesse des ennemis
-delai_mouvement = 35  # Délai en millisecondes entre chaque mouvement
-dernier_mouvement = 0  # Pour suivre le temps du dernier mouvement
+nombre_cles = 3
+cles_collectees = 0
+nombre_ennemis = 3
+vitesse_ennemis = 0.4
+delai_mouvement = 35
+dernier_mouvement = 0
 
 # Paramètres de la vision
-cone_angle = 60  # Angle du cône de vision en degrés
-cone_longueur = 600  # Longueur du cône de vision
-rayon_vision_proche = 100  # Rayon du cercle de vision autour du joueur
+cone_angle = 60
+cone_longueur = 600
+rayon_vision_proche = 100
 
 # Paramètres du réticule
-tailles_reticule = [3, 5, 7, 10]  # Différentes tailles de réticule
-types_reticule = ["Croix", "Point", "Aucun"]  # Différents types de réticule
-index_taille_reticule = 1  # Deuxième taille par défaut (5)
-index_type_reticule = 0  # Réticule croix par défaut
+tailles_reticule = [3, 5, 7, 10]
+types_reticule = ["Croix", "Point", "Aucun"]
+index_taille_reticule = 1
+index_type_reticule = 0
+epaisseur_reticule = [1, 2, 3, 4, 5]
+index_epaisseur_reticule = 3
 
 # Génération initiale
 nombre_lignes = (hauteur // taille_case) * 8
@@ -86,7 +84,7 @@ camera_offset = [0, 0]
 angle_de_vue = 270  # 0 = droite, 90 = bas, 180 = gauche, 270 = haut
 
 # Stocker les ennemis avec leurs positions et directions
-ennemis = []  # Liste qui contiendra des dictionnaires pour chaque ennemi
+ennemis = []
 
 # Suivris de l'index de la case sélectionnée
 index_case_selectionnee = 0
@@ -100,25 +98,22 @@ resolutions = [
     (2560, 1440),
     (largeur, hauteur),  # Résolution native
 ]
-resolution_index = 0  # Index de la résolution sélectionnée
+resolution_index = 0 
 
-largeur_base = 1920  # Largeur de la résolution de base
-hauteur_base = 1080  # Hauteur de la résolution de base
+largeur_base = 1920
+hauteur_base = 1080
 
-montrer_fps = False  # Ne pas montrer les FPS par défaut
+montrer_fps = False
 
-epaisseur_reticule = [1, 2, 3, 4, 5]  # Différentes épaisseurs de réticule
-index_epaisseur_reticule = 1  # Epaisseur par défaut (2)
-
-volume = 0.5  # Niveau de volume par défaut
+volume = 0.5
 
 # Paramètres d'endurance
-endurance_max = 100  # Endurance maximale
-endurance_actuelle = endurance_max  # Endurance actuelle
-taux_diminution = 0.5  # Réduit pour une diminution plus lente
-taux_recuperation = 0.2  # Réduit pour une récupération plus lente
-delai_mouvement_normal = 100  # Délai en millisecondes pour le mouvement normal
-delai_mouvement_rapide = 40  # Délai en millisecondes pour le mouvement rapide
+endurance_max = 100
+endurance_actuelle = endurance_max
+taux_diminution = 0.5
+taux_recuperation = 0.2
+delai_mouvement_normal = 100
+delai_mouvement_rapide = 40
 
 
 class Ennemi:
@@ -134,7 +129,7 @@ class Ennemi:
         self.vitesse_actuelle = self.vitesse_lente
         self.derniere_pos_joueur = None
         self.temps_memoire = 0
-        self.duree_memoire_max = 180  # Environ 3 secondes à 60 FPS
+        self.duree_memoire_max = 180
 
     def peut_voir_joueur(self, joueur_pos, jeu):
         # Calculer la distance entre l'ennemi et le joueur
@@ -249,15 +244,15 @@ def verifier_collision_ennemis(joueur_pos, ennemis):
 
 
 def game_over():
-    arreter_musique()  # Arrete la musique de jeu
-    musique_menu()  # Commencer la musique du menu
+    arreter_musique()
+    musique_menu()
     fenetre.fill(noir)
     texte = pygame.font.Font(None, 60).render("Game Over!", True, blanc)
     texte_rect = texte.get_rect(center=(largeur // 2, hauteur // 2))
     fenetre.blit(texte, texte_rect)
     pygame.display.flip()
-    pygame.time.delay(2000)  # Attendre 2 secondes
-    return "menu"  # Retourner au menu
+    pygame.time.delay(2000) # En millisecondes
+    return "menu"
 
 
 def appliquer_masque_vision(surface, position, angle, length):
@@ -268,16 +263,14 @@ def appliquer_masque_vision(surface, position, angle, length):
     start_angle = math.radians(angle - cone_angle / 2)
     end_angle = math.radians(angle + cone_angle / 2)
 
-    # Points pour le polygone de vision
     points = [(x, y)]  # Point de départ (position du joueur)
 
-    # Pour chaque rayon du cône
-    steps = 180  # Plus de précision pour un rendu plus lisse
+    steps = 180
     for i in range(steps + 1):
         theta = start_angle + i * (end_angle - start_angle) / steps
 
         # Lancer un rayon
-        for dist in range(0, int(length), 2):  # Pas plus petit pour plus de précision
+        for dist in range(0, int(length), 2):
             ray_x = x + dist * math.cos(theta)
             ray_y = y + dist * math.sin(theta)
 
@@ -293,7 +286,7 @@ def appliquer_masque_vision(surface, position, angle, length):
             ):
                 points.append((ray_x, ray_y))
                 break
-            elif dist >= length - 2:  # Si on atteint la distance maximale
+            elif dist >= length - 2:
                 points.append((ray_x, ray_y))
 
     # Dessiner le polygone de vision du cône
@@ -344,15 +337,15 @@ def generer_jeu(nb_lignes, nb_colonnes):
 
     # Ajoute une sortie sur un bord aléatoire
     bords = [
-        (0, random.randint(1, nb_colonnes - 2)),  # Bord supérieur
-        (nb_lignes - 1, random.randint(1, nb_colonnes - 2)),  # Bord inférieur
-        (random.randint(1, nb_lignes - 2), 0),  # Bord gauche
-        (random.randint(1, nb_lignes - 2), nb_colonnes - 1),  # Bord droit
+        (0, random.randint(1, nb_colonnes - 2)),
+        (nb_lignes - 1, random.randint(1, nb_colonnes - 2)),
+        (random.randint(1, nb_lignes - 2), 0),
+        (random.randint(1, nb_lignes - 2), nb_colonnes - 1),
     ]
     random.shuffle(bords)
     for sortie_y, sortie_x in bords:
         if jeu[sortie_y][sortie_x] == " ":
-            jeu[sortie_y][sortie_x] = "S"  # Marque la sortie
+            jeu[sortie_y][sortie_x] = "S"
             break
 
     return jeu
@@ -376,10 +369,9 @@ def placer_cles(jeu, nombre_cles):
 
 
 def est_dans_cone(joueur_pos, case_pos, angle, length):
-    """Version optimisée de la vérification du cône"""
     dx = case_pos[0] - joueur_pos[0]
     dy = case_pos[1] - joueur_pos[1]
-    distance = dx * dx + dy * dy  # Pas besoin de sqrt pour la comparaison
+    distance = dx * dx + dy * dy
 
     if distance > (length / taille_case) * (length / taille_case):
         return False
@@ -392,7 +384,7 @@ def est_dans_cone(joueur_pos, case_pos, angle, length):
 
 
 def est_visible(joueur_pos, case_pos, jeu):
-    """Vérifie si une case est visible (dans le cône ou le cercle proche, et pas de mur entre)"""
+    '''Vérifie si une case est visible (dans le cône ou le cercle proche, et pas de mur entre)'''
     joueur_x, joueur_y = joueur_pos
     case_x, case_y = case_pos
 
@@ -415,7 +407,6 @@ def est_visible(joueur_pos, case_pos, jeu):
 
 
 def a_mur_entre(joueur_pos, case_pos, jeu):
-    """Version optimisée de la vérification des murs"""
     x1, y1 = joueur_pos
     x2, y2 = case_pos
 
@@ -450,7 +441,6 @@ def a_mur_entre(joueur_pos, case_pos, jeu):
 
 
 def dessiner_jeu(jeu, joueur_pos, camera_offset):
-    """Version optimisée du rendu"""
     # Surface virtuelle pour le rendu de base
     surface_virtuelle = pygame.Surface((largeur_base, hauteur_base))
     surface_virtuelle.fill(noir)
@@ -498,7 +488,7 @@ def dessiner_jeu(jeu, joueur_pos, camera_offset):
         y = i * taille_case - cam_y
         for j in range(debut_x, fin_x):
             case = jeu[i][j]
-            if case in ["S", "C"]:  # Exclure "Y" car les ennemis sont gérés séparément
+            if case in ["S", "C"]:
                 if est_visible(joueur_pos, (j, i), jeu):
                     x = j * taille_case - cam_x
                     couleur = sortie if case == "S" else cle
@@ -519,7 +509,7 @@ def dessiner_jeu(jeu, joueur_pos, camera_offset):
     )
 
     # Tourner l'image du joueur pour suive la souris et convertit l'angle de vue pour correspondre à la rotation de Pygame (0° est en haut, dans le sens horaire)
-    rotation_angle = -(angle_de_vue + 90)  # Ajouter 90 pour ajuster l'angle de départ
+    rotation_angle = -(angle_de_vue + 90)
     joueur_rotated = pygame.transform.rotate(joueur, rotation_angle)
 
     # Calculer la position du joueur après rotation
@@ -543,7 +533,7 @@ def deplacement_valide(jeu, pos):
 
 # Menu de victoire
 def afficher_victoire():
-    arreter_musique()  # Stop game music
+    arreter_musique()
     fenetre.fill(noir)
     texte = pygame.font.Font(None, 60).render("Victoire !", True, blanc)
     texte_rect = texte.get_rect(center=(largeur // 2, hauteur // 2))
@@ -554,14 +544,14 @@ def afficher_victoire():
 
 # Menu des crédits
 def afficher_credits():
-    # Constants for animation
-    vitesse_scroll = 5  # Reduced for smoother scrolling
+    # Variables pour les crédits
+    vitesse_scroll = 5
     taille_titre = 100
     taille_nom = 80
     taille_roles = 50
-    espacement = 120  # Espacement de taille normale entre les développeurs
-    espacement_2 = 30  # Petit espacement (entre nom et rôle)
-    espacement_3 = 200  # Espacement large (après le titre)
+    espacement = 120
+    espacement_2 = 30
+    espacement_3 = 200
 
     # Contenu des crédits avec les rôles
     credits_data = [
@@ -587,22 +577,20 @@ def afficher_credits():
 
     # Calculer la longueur totale pour le défilement
     total_height = sum([size if text == "" else 80 for text, size in credits_data])
-    y_offset = float(hauteur)  # Utiliser un float pour le défilement fluide
+    y_offset = float(hauteur)
 
     while True:
         fenetre.fill(noir)
 
-        current_y = int(y_offset)  # Convertir en entier uniquement pour le rendu
+        current_y = int(y_offset)
 
         # Dessiner le texte des crédits
         for text, size in credits_data:
-            if text:  # Seulement dessiner si le texte n'est pas vide
+            if text:
                 texte = pygame.font.Font(font_helpme, size).render(text, True, blanc)
                 texte_rect = texte.get_rect(center=(largeur // 2, current_y))
 
-                # Seulment dessiner si le texte est dans la fenêtre
                 if -50 <= current_y <= hauteur + 50:
-                    # Ajouter un effet de lueur pour le titre
                     if size == taille_titre:
                         glow = pygame.font.Font(font_helpme, size).render(
                             text, True, (100, 100, 100)
@@ -620,7 +608,7 @@ def afficher_credits():
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:  # Seulement le clic gauche pour quitter
+                if event.button == 1:
                     return
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -636,35 +624,35 @@ def afficher_credits():
         horloge.tick(60)
 
 
-def bords_arrondis(surface, color, rect, radius):
-    """Draw a rectangle with rounded corners"""
+def bords_arrondis(surface, couleur, rect, radius):
+    '''Dessine un rectangle avec des bords arrondis'''
     x, y, width, height = rect
 
     # Dessiner des cercles remplis pour les coins
-    pygame.draw.circle(surface, color, (x + radius, y + radius), radius)
-    pygame.draw.circle(surface, color, (x + width - radius, y + radius), radius)
-    pygame.draw.circle(surface, color, (x + radius, y + height - radius), radius)
+    pygame.draw.circle(surface, couleur, (x + radius, y + radius), radius)
+    pygame.draw.circle(surface, couleur, (x + width - radius, y + radius), radius)
+    pygame.draw.circle(surface, couleur, (x + radius, y + height - radius), radius)
     pygame.draw.circle(
-        surface, color, (x + width - radius, y + height - radius), radius
+        surface, couleur, (x + width - radius, y + height - radius), radius
     )
 
     # Dessiner des rectangles pour remplir la surface
-    pygame.draw.rect(surface, color, (x + radius, y, width - 2 * radius, height))
-    pygame.draw.rect(surface, color, (x, y + radius, width, height - 2 * radius))
+    pygame.draw.rect(surface, couleur, (x + radius, y, width - 2 * radius, height))
+    pygame.draw.rect(surface, couleur, (x, y + radius, width, height - 2 * radius))
 
 
-def draw_button(surface, rect, text, font, hover_color, default_color, text_color, border_radius=15, icon_text=None, icon_font=None):
+def draw_button(surface, rect, text, font, hover_couleur, default_couleur, text_couleur, border_radius=15, icon_text=None, icon_font=None):
     mouse_x, mouse_y = pygame.mouse.get_pos()
     if rect.collidepoint(mouse_x, mouse_y):
-        color = hover_color
+        couleur = hover_couleur
         rect = rect.inflate(20, 20)
     else:
-        color = default_color
+        couleur = default_couleur
 
-    bords_arrondis(surface, color, rect, border_radius)
+    bords_arrondis(surface, couleur, rect, border_radius)
     
     if icon_text and icon_font:
-        icon_surface = icon_font.render(icon_text, True, text_color)
+        icon_surface = icon_font.render(icon_text, True, text_couleur)
         surface.blit(
             icon_surface,
             (
@@ -672,7 +660,7 @@ def draw_button(surface, rect, text, font, hover_color, default_color, text_colo
                 rect.centery - icon_surface.get_height() // 2,
             ),
         )
-        text_surface = font.render(text, True, text_color)
+        text_surface = font.render(text, True, text_couleur)
         surface.blit(
             text_surface,
             (
@@ -681,7 +669,7 @@ def draw_button(surface, rect, text, font, hover_color, default_color, text_colo
             ),
         )
     else:
-        text_surface = font.render(text, True, text_color)
+        text_surface = font.render(text, True, text_couleur)
         surface.blit(
             text_surface,
             (
@@ -749,28 +737,26 @@ def afficher_menu():
     ]
 
     # Facteurs de parallaxe pour plus de mouvement
-    parallax_factors = [0.02, 0.04, 0.08, 0.12, 0.16]
-    initial_offset_x = -150  # Décalage initial
+    facteurs_parralaxe = [0.02, 0.04, 0.08, 0.12, 0.16]
+    decalage_x_initial = -150
 
     while True:
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
-        # Calculer le décalage relatif avec plus d'amplitude
         center_x = largeur / 2
         center_y = hauteur / 2
         rel_x = (mouse_x - center_x) / (
             center_x * 0.7
-        )  # Réduit le diviseur pour plus d'amplitude
+        )
         rel_y = (mouse_y - center_y) / (center_y * 0.7)
 
         for i, layer in enumerate(couches_fond):
-            # Calculer les décalages avec plus d'amplitude
-            offset_x = initial_offset_x - rel_x * parallax_factors[i] * (
+            decalage_x = decalage_x_initial - rel_x * facteurs_parralaxe[i] * (
                 echelle_largeur - largeur
             )
-            offset_y = -rel_y * parallax_factors[i] * (echelle_hauteur - hauteur)
+            decalage_y = -rel_y * facteurs_parralaxe[i] * (echelle_hauteur - hauteur)
 
-            fenetre.blit(layer, (offset_x, offset_y))
+            fenetre.blit(layer, (decalage_x, decalage_y))
 
         titre = pygame.font.Font(font_november, 150).render(nom, True, blanc)
         titre_rect = titre.get_rect(center=(largeur // 2, hauteur // 6))
@@ -801,8 +787,6 @@ def afficher_menu():
             ),
         ]
 
-        souris_x, souris_y = pygame.mouse.get_pos()
-
         for bouton, texte, taille_texte in boutons:
             draw_button(fenetre, bouton, texte, pygame.font.Font(font_helpme, taille_texte), (255, 0, 0), bordeaux, blanc)
 
@@ -814,25 +798,22 @@ def afficher_menu():
                 return
 
 def afficher_menu_pause():
-    pygame.mouse.set_visible(True)  # Montre le curseur dans le menu pause
+    pygame.mouse.set_visible(True)
     global resolution_index, largeur, hauteur, fenetre
 
     # Charger l'image de fond
     fond = pygame.image.load(fond_1)
-    fond = pygame.transform.scale(
-        fond, (largeur, hauteur)
-    )  # Ajuster la taille de l'image de fond
+    fond = pygame.transform.scale(fond, (largeur, hauteur))
 
     while True:
         fenetre.blit(fond, (0, 0))
 
-        # Titre du menu pause
         titre = pygame.font.Font(font_november, 100).render(nom, True, blanc)
         titre_rect = titre.get_rect(center=(largeur // 2, hauteur // 6))
         fenetre.blit(titre, titre_rect)
 
         # Centrer les boutons
-        espace_boutton = 120  # Espacement régulier entre les boutons
+        espace_boutton = 120
         y_depart = hauteur // 3
         boutons = [
             (
@@ -862,8 +843,6 @@ def afficher_menu_pause():
             ),
         ]
 
-        souris_x, souris_y = pygame.mouse.get_pos()
-
         for bouton, texte, taille_texte in boutons:
             draw_button(fenetre, bouton, texte, pygame.font.Font(font_helpme, taille_texte), (255, 0, 0), bordeaux, blanc)
 
@@ -879,12 +858,10 @@ def afficher_menu_pause():
 
 # Afficher le compteur de clés
 def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
-    # Position du compteur (coin supérieur droit)
     marge = 20
     taille_icone = 30
     espacement = 10
 
-    # Dessiner le fond du compteur
     fond_rect = pygame.Rect(
         largeur - (marge + taille_icone + 80),
         marge,
@@ -892,7 +869,7 @@ def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
         taille_icone + 10,
     )
     pygame.draw.rect(surface, bordeaux, fond_rect)
-    pygame.draw.rect(surface, blanc, fond_rect, 2)  # Bordure blanche
+    pygame.draw.rect(surface, blanc, fond_rect, 2)
 
     # Dessiner l'icône de clé
     icone_cle = pygame.Rect(
@@ -915,37 +892,32 @@ def dessiner_compteur_cles(surface, cles_collectees, nombre_cles_total):
 
 # Afficher l'inventaire
 def dessiner_inventaire(surface):
-    # Position et taille de l'inventaire
+    # Variables pour l'inventaire
     inventaire_x = 30
     inventaire_y = hauteur - 70
     case_taille = 50
     espacement = 10
-    nombre_cases = 5  # Nombre total de cases dans l'inventaire
+    nombre_cases = 5
 
     # Dessiner les cases d'inventaire
-    for i in range(
-        nombre_cases
-    ):  # Utiliser nombre_cases au lieu d'une valeur codée en dur
+    for i in range(nombre_cases):
         x = inventaire_x + (case_taille + espacement) * i
         rect = pygame.Rect(x, inventaire_y, case_taille, case_taille)
 
         # Mettre en surbrillance la case sélectionnée
         if i == index_case_selectionnee:
-            # Case sélectionnée en gris
             pygame.draw.rect(surface, (100, 100, 100), rect)
-            # Bordure blanche plus épaisse
             pygame.draw.rect(surface, blanc, rect, 3)
         else:
-            # Cases non sélectionnées en gris foncé
             pygame.draw.rect(surface, (50, 50, 50), rect)
-            pygame.draw.rect(surface, gris, rect, 1)  # Bordure grise fine
+            pygame.draw.rect(surface, gris, rect, 1)
 
 
 # Afficher les paramètres
 def afficher_parametres():
     global resolution_index, largeur, hauteur, fenetre, index_taille_reticule, index_type_reticule, index_epaisseur_reticule, plein_ecran, montrer_fps, volume
 
-    selected_section = 0  # 0 = Affichage, 1 = Réticule, 2 = Son
+    section_choisie = 0  # 0 = Affichage, 1 = Réticule, 2 = Son
     sections = ["Affichage", "Réticule", "Son"]
 
     slider_rect = pygame.Rect(0, 0, 200, 10)
@@ -953,8 +925,7 @@ def afficher_parametres():
     slider_rect_epaisseur = pygame.Rect(0, 0, 200, 10)
     slider_pos_epaisseur = epaisseur_reticule[index_epaisseur_reticule]
     slider_rect_volume = pygame.Rect(0, 0, 200, 10)
-    slider_pos_volume = volume * 100  # Convertit le volume en pourcentage
-    peut_ecrire = False
+    slider_pos_volume = volume * 100
     texte_parametre = str(slider_pos)
     texte_epaisseur = str(slider_pos_epaisseur)
     texte_volume = str(int(slider_pos_volume))
@@ -971,70 +942,66 @@ def afficher_parametres():
         draw_button(fenetre, bouton_retour, " Retour", pygame.font.Font(font_helpme, 30), (255, 0, 0), bordeaux, blanc, icon_text="B", icon_font=pygame.font.Font(font_arrows, 30))
 
         # Centrer les sections
-        section_total_width = sum([200 for _ in sections])
-        section_start_x = (largeur - section_total_width) // 2
+        section_largeur_totale = sum([200 for _ in sections])
+        section_x_debut = (largeur - section_largeur_totale) // 2
 
         # Afficher les sections
         for i, section in enumerate(sections):
-            color = blanc if i == selected_section else gris
-            texte = pygame.font.Font(None, 40).render(section, True, color)
-            text_rect = texte.get_rect(center=(section_start_x + i * 200 + 100, 150))
-            fenetre.blit(texte, text_rect)
+            couleur = blanc if i == section_choisie else gris
+            texte = pygame.font.Font(None, 40).render(section, True, couleur)
+            texte_rect = texte.get_rect(center=(section_x_debut + i * 200 + 100, 150))
+            fenetre.blit(texte, texte_rect)
 
         # Afficher les paramètres pour la section choisie
-        if selected_section == 0:
-            # Liste des résolutions
+        if section_choisie == 0:
             for i, (width, height) in enumerate(resolutions):
                 resolution_texte = f"{width} x {height}"
                 if plein_ecran:
-                    color = (100, 100, 100)  # Grisé pour les résolutions non disponibles en plein écran
+                    couleur = (100, 100, 100)
                 else:
-                    color = blanc if i == resolution_index else gris
-                texte = pygame.font.Font(None, 40).render(resolution_texte, True, color)
-                text_rect = texte.get_rect(center=(largeur // 2, 250 + i * 50))
-                fenetre.blit(texte, text_rect)
+                    couleur = blanc if i == resolution_index else gris
+                texte = pygame.font.Font(None, 40).render(resolution_texte, True, couleur)
+                texte_rect = texte.get_rect(center=(largeur // 2, 250 + i * 50))
+                fenetre.blit(texte, texte_rect)
 
             # Boutton pour basculer en plein écran
-            fullscreen_text = "Plein écran: " + ("Oui" if plein_ecran else "Non")
-            color = blanc if plein_ecran else gris
-            texte = pygame.font.Font(None, 40).render(fullscreen_text, True, color)
-            text_rect = texte.get_rect(
+            texte_plein_ecran = "Plein écran: " + ("Oui" if plein_ecran else "Non")
+            couleur = blanc if plein_ecran else gris
+            texte = pygame.font.Font(None, 40).render(texte_plein_ecran, True, couleur)
+            texte_rect = texte.get_rect(
                 center=(largeur // 2, 250 + len(resolutions) * 50)
             )
-            fenetre.blit(texte, text_rect)
+            fenetre.blit(texte, texte_rect)
 
             # Bouton pour afficher les FPS
-            fps_text = "Afficher les FPS: " + ("Oui" if montrer_fps else "Non")
-            color = blanc if montrer_fps else gris
-            texte = pygame.font.Font(None, 40).render(fps_text, True, color)
-            text_rect = texte.get_rect(
+            texte_fps = "Afficher les FPS: " + ("Oui" if montrer_fps else "Non")
+            couleur = blanc if montrer_fps else gris
+            texte = pygame.font.Font(None, 40).render(texte_fps, True, couleur)
+            texte_rect = texte.get_rect(
                 center=(largeur // 2, 250 + (len(resolutions) + 1) * 50)
             )
-            fenetre.blit(texte, text_rect)
+            fenetre.blit(texte, texte_rect)
 
         # Paramètres du réticule
-        elif selected_section == 1:
+        elif section_choisie == 1:
             center_x = largeur // 2
-            preview_x = center_x
+            apercu_x = center_x
 
-            # Afficher le texte "Taille" et les paramètres
             texte = pygame.font.Font(None, 40).render("Taille:", True, blanc)
-            text_rect = texte.get_rect(center=(center_x - 150, 250))
-            fenetre.blit(texte, text_rect)
+            texte_rect = texte.get_rect(center=(center_x - 150, 250))
+            fenetre.blit(texte, texte_rect)
 
             slider_rect.centerx = center_x
             slider_rect.centery = 300
-            slider_color = (
+            slider_couleur = (
                 (50, 50, 50) if types_reticule[index_type_reticule] == "Aucun" else gris
             )
-            pygame.draw.rect(fenetre, slider_color, slider_rect)
+            pygame.draw.rect(fenetre, slider_couleur, slider_rect)
 
-            # Dessiner le curseur du slider
             handle_pos = slider_rect.left + (slider_pos - 1) * (slider_rect.width / 20)
             if types_reticule[index_type_reticule] != "Aucun":
                 pygame.draw.circle(fenetre, blanc, (handle_pos, slider_rect.centery), 8)
 
-            # Afficher le texte de la taille du réticule
             font = pygame.font.Font(None, 40)
             text_surface = font.render(
                 texte_parametre,
@@ -1045,117 +1012,99 @@ def afficher_parametres():
                     else (50, 50, 50)
                 ),
             )
-            text_rect = text_surface.get_rect(center=(center_x + 150, 300))
-            fenetre.blit(text_surface, text_rect)
+            texte_rect = text_surface.get_rect(center=(center_x + 150, 300))
+            fenetre.blit(text_surface, texte_rect)
 
-            # Afficher le texte "Épaisseur" et les paramètres
-            thickness_texte = pygame.font.Font(None, 40).render(
-                "Épaisseur:", True, blanc
+            texte_epaisseur_str = "Épaisseur:"
+            texte_epaisseur = pygame.font.Font(None, 40).render(
+                texte_epaisseur_str, True, blanc
             )
-            thickness_text_rect = thickness_texte.get_rect(center=(center_x - 150, 370))
-            fenetre.blit(thickness_texte, thickness_text_rect)
+            texte_epaisseur_rect = texte_epaisseur.get_rect(center=(center_x - 150, 370))
+            fenetre.blit(texte_epaisseur, texte_epaisseur_rect)
 
-            # Dessiner le slider d'épaisseur
             slider_rect_epaisseur.centerx = center_x
-            slider_rect_epaisseur.centery = 420  # Move thickness slider below the text
-            thickness_slider_color = (
+            slider_rect_epaisseur.centery = 420
+            couleur_slider_epaisseur = (
                 (50, 50, 50) if types_reticule[index_type_reticule] != "Croix" else gris
             )
-            pygame.draw.rect(fenetre, thickness_slider_color, slider_rect_epaisseur)
+            pygame.draw.rect(fenetre, couleur_slider_epaisseur, slider_rect_epaisseur)
 
-            # Dessiner le curseur du slider d'épaisseur
-            thickness_handle_pos = slider_rect_epaisseur.left + (
+            poignee_epaisseur_pos = slider_rect_epaisseur.left + (
                 slider_pos_epaisseur - 1
             ) * (slider_rect_epaisseur.width / 4)
             if types_reticule[index_type_reticule] == "Croix":
                 pygame.draw.circle(
                     fenetre,
                     blanc,
-                    (thickness_handle_pos, slider_rect_epaisseur.centery),
+                    (poignee_epaisseur_pos, slider_rect_epaisseur.centery),
                     8,
                 )
 
-            # Dessiner le texte de l'épaisseur du réticule
-            thickness_text_surface = font.render(
-                texte_epaisseur,
-                True,
-                (
-                    blanc
-                    if types_reticule[index_type_reticule] == "Croix"
-                    else (50, 50, 50)
-                ),
-            )
-            thickness_text_rect = thickness_text_surface.get_rect(
-                center=(center_x + 150, 420)
-            )
-            fenetre.blit(thickness_text_surface, thickness_text_rect)
 
-            # Dessiner le texte "Style" et les paramètres
             style_text = pygame.font.Font(None, 40).render("Style:", True, blanc)
             style_rect = style_text.get_rect(center=(center_x - 150, 490))
             fenetre.blit(style_text, style_rect)
 
-            # Choix du type de réticule
             for i, style in enumerate(types_reticule):
-                color = blanc if i == index_type_reticule else gris
-                texte = pygame.font.Font(None, 40).render(style, True, color)
-                text_rect = texte.get_rect(center=(center_x, 490 + i * 50))
-                fenetre.blit(texte, text_rect)
+                couleur = blanc if i == index_type_reticule else gris
+                texte = pygame.font.Font(None, 40).render(style, True, couleur)
+                texte_rect = texte.get_rect(center=(center_x, 490 + i * 50))
+                fenetre.blit(texte, texte_rect)
 
             # Aperçu du réticule
-            preview_y = 700
-            preview_text = pygame.font.Font(None, 40).render("Aperçu", True, blanc)
-            preview_text_rect = preview_text.get_rect(center=(center_x, preview_y - 50))
-            fenetre.blit(preview_text, preview_text_rect)
-            preview_size = 150
-            border_padding = 10
-            outer_rect = pygame.Rect(
-                preview_x - preview_size // 2 - border_padding,
-                preview_y - preview_size // 2 - border_padding,
-                preview_size + border_padding * 2,
-                preview_size + border_padding * 2,
+            apercu_y = 700
+            apercu_texte = pygame.font.Font(None, 40).render("Aperçu", True, blanc)
+            apercu_texte_rect = apercu_texte.get_rect(center=(center_x, apercu_y - 50))
+            fenetre.blit(apercu_texte, apercu_texte_rect)
+            apercu_taille = 150
+            bords = 10
+            rect_exterieur = pygame.Rect(
+                apercu_x - apercu_taille // 2 - bords,
+                apercu_y - apercu_taille // 2 - bords,
+                apercu_taille + bords * 2,
+                apercu_taille + bords * 2,
             )
-            pygame.draw.rect(fenetre, gris, outer_rect)
-            preview_rect = pygame.Rect(
-                preview_x - preview_size // 2,
-                preview_y - preview_size // 2,
-                preview_size,
-                preview_size,
+            pygame.draw.rect(fenetre, gris, rect_exterieur)
+            apercu_rect = pygame.Rect(
+                apercu_x - apercu_taille // 2,
+                apercu_y - apercu_taille // 2,
+                apercu_taille,
+                apercu_taille,
             )
-            pygame.draw.rect(fenetre, sol, preview_rect)
-            pygame.draw.rect(fenetre, blanc, preview_rect, 1)
+            pygame.draw.rect(fenetre, sol, apercu_rect)
+            pygame.draw.rect(fenetre, blanc, apercu_rect, 1)
 
             # Dessiner l'appercu du réticule
             if types_reticule[index_type_reticule] == "Croix":
                 pygame.draw.line(
                     fenetre,
                     blanc,
-                    (preview_x - slider_pos, preview_y),
-                    (preview_x + slider_pos, preview_y),
+                    (apercu_x - slider_pos, apercu_y),
+                    (apercu_x + slider_pos, apercu_y),
                     int(slider_pos_epaisseur),
                 )
                 pygame.draw.line(
                     fenetre,
                     blanc,
-                    (preview_x, preview_y - slider_pos),
-                    (preview_x, preview_y + slider_pos),
+                    (apercu_x, apercu_y - slider_pos),
+                    (apercu_x, apercu_y + slider_pos),
                     int(slider_pos_epaisseur),
                 )
             elif types_reticule[index_type_reticule] == "Point":
-                pygame.draw.circle(fenetre, blanc, (preview_x, preview_y), slider_pos)
+                pygame.draw.circle(fenetre, blanc, (apercu_x, apercu_y), slider_pos)
 
         # Paramètres du son
-        elif selected_section == 2:
+        elif section_choisie == 2:
             center_x = largeur // 2
 
             # Afficher le texte "Volume" et les paramètres
             texte = pygame.font.Font(None, 40).render("Volume:", True, blanc)
-            text_rect = texte.get_rect(center=(center_x - 150, 250))
-            fenetre.blit(texte, text_rect)
+            texte_rect = texte.get_rect(center=(center_x - 150, 250))
+            fenetre.blit(texte, texte_rect)
 
             # Dessiner le slider de volume
             slider_rect_volume.centerx = center_x
-            slider_rect_volume.centery = 300  # Move slider below the text
+            slider_rect_volume.centery = 300
             pygame.draw.rect(fenetre, gris, slider_rect_volume)
 
             # Dessiner le curseur du slider de volume
@@ -1170,10 +1119,10 @@ def afficher_parametres():
             # Dessiner le texte du volume
             font = pygame.font.Font(None, 40)
             volume_text_surface = font.render(texte_volume, True, blanc)
-            volume_text_rect = volume_text_surface.get_rect(
+            volume_texte_rect = volume_text_surface.get_rect(
                 center=(center_x + 150, 300)
             )
-            fenetre.blit(volume_text_surface, volume_text_rect)
+            fenetre.blit(volume_text_surface, volume_texte_rect)
 
         # Gérer les événements
         for event in pygame.event.get():
@@ -1183,29 +1132,25 @@ def afficher_parametres():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return
-                elif event.key == pygame.K_LEFT and selected_section > 0:
-                    selected_section -= 1
+                elif event.key == pygame.K_LEFT and section_choisie > 0:
+                    section_choisie -= 1
                 elif (
-                    event.key == pygame.K_RIGHT and selected_section < len(sections) - 1
+                    event.key == pygame.K_RIGHT and section_choisie < len(sections) - 1
                 ):
-                    selected_section += 1
+                    section_choisie += 1
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = event.pos
-                # Choix de la section
-                if (
-                    mouse_y < 200
-                ):  # Click in the section headers area, lowered by 100 pixels
+                if (mouse_y < 200):
                     for i in range(len(sections)):
                         if (
-                            section_start_x + i * 200
+                            section_x_debut + i * 200
                             <= mouse_x
-                            <= section_start_x + (i + 1) * 200
+                            <= section_x_debut + (i + 1) * 200
                         ):
-                            selected_section = i
+                            section_choisie = i
 
-                elif selected_section == 0:  # Paramètres d'affichage
-                    # Choix de la résolution
+                elif section_choisie == 0:
                     if not plein_ecran:
                         for i in range(len(resolutions)):
                             if (250 <= mouse_y <= 250 + len(resolutions) * 50):
@@ -1218,7 +1163,6 @@ def afficher_parametres():
                                     )
                                     os.environ["SDL_VIDEO_CENTERED"] = "1"
 
-                    # Bouton pour basculer en plein écran
                     if (
                         250 + len(resolutions) * 50 - 25
                         <= mouse_y
@@ -1228,7 +1172,6 @@ def afficher_parametres():
                         flags = pygame.FULLSCREEN if plein_ecran else pygame.RESIZABLE
                         fenetre = pygame.display.set_mode((largeur, hauteur), flags)
 
-                    # Bouton pour afficher les FPS
                     if (
                         250 + (len(resolutions) + 1) * 50 - 25
                         <= mouse_y
@@ -1236,38 +1179,32 @@ def afficher_parametres():
                     ):
                         montrer_fps = not montrer_fps
 
-                # Bouton de retour
                 if bouton_retour.collidepoint(event.pos):
                     return
 
-            if selected_section == 1:  # Paramètres du réticule
+            if section_choisie == 1:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_x, mouse_y = event.pos
-                    # Gérer le clic et le glissement du slider
                     if (
                         slider_rect.collidepoint(event.pos)
                         and types_reticule[index_type_reticule] != "Aucun"
                     ):
                         glisse_slider = True
-                        # Mettre à jour la position du curseur immédiatement sur le clic
                         slider_pos = (
                             mouse_x - slider_rect.left
                         ) / slider_rect.width * 20 + 1
                         slider_pos = max(1, min(20, slider_pos))
                         texte_parametre = str(int(slider_pos))
-                    # Gérer le clic et le glissement du slider d'épaisseur
                     if (
                         slider_rect_epaisseur.collidepoint(event.pos)
                         and types_reticule[index_type_reticule] == "Croix"
                     ):
                         glisse_slider_epaisseur = True
-                        # Mettre à jour la position du curseur d'épaisseur immédiatement sur le clic
                         slider_pos_epaisseur = (
                             mouse_x - slider_rect_epaisseur.left
                         ) / slider_rect_epaisseur.width * 4 + 1
                         slider_pos_epaisseur = max(1, min(5, slider_pos_epaisseur))
                         texte_epaisseur = str(int(slider_pos_epaisseur))
-                    # Sélectionner le type de réticule
                     for i, style in enumerate(types_reticule):
                         style_y = 490 + i * 50
                         if (
@@ -1301,13 +1238,11 @@ def afficher_parametres():
                         slider_pos_epaisseur = max(1, min(5, slider_pos_epaisseur))
                         texte_epaisseur = str(int(slider_pos_epaisseur))
 
-            if selected_section == 2:  # Paramètres du son
+            if section_choisie == 2:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_x, mouse_y = event.pos
-                    # Gérer le clic et le glissement du slider de volume
                     if slider_rect_volume.collidepoint(event.pos):
                         glisse_slider_volume = True
-                        # Mettre à jour la position du curseur de volume immédiatement sur le clic
                         slider_pos_volume = (
                             (mouse_x - slider_rect_volume.left)
                             / slider_rect_volume.width
@@ -1337,11 +1272,9 @@ def afficher_parametres():
                         volume = slider_pos_volume / 100
                         pygame.mixer.music.set_volume(volume)
 
-        # Mettre à jour l'affichage du réticule par rapport slider
         index_taille_reticule = min(
             len(tailles_reticule) - 1, max(0, int((slider_pos - 1) / 5))
         )
-        # Mettre à jour l'affichage de l'épaisseur du réticule par rapport slider
         index_epaisseur_reticule = min(
             len(epaisseur_reticule) - 1, max(0, int((slider_pos_epaisseur - 1) / 1))
         )
@@ -1439,8 +1372,8 @@ def dessiner_barre_endurance(surface):
 
 # Boucle principale
 afficher_menu()
-pygame.mouse.set_visible(False)  # Cache le curseur dans le jeu
-musique_fond()  # Jouer la musique de fond
+pygame.mouse.set_visible(False)
+musique_fond()
 
 # Montrer l'écran de transition de niveau avant de commencer le jeu
 afficher_transition_niveau(1)
@@ -1452,9 +1385,9 @@ while running:
             running = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                pygame.mouse.set_visible(True)  # Afficher le curseur dans le menu
+                pygame.mouse.set_visible(True)
                 choix = afficher_menu_pause()
-                pygame.mouse.set_visible(False)  # Cacher le curseur dans le jeu
+                pygame.mouse.set_visible(False)
                 if choix == "recommencer":
                     jeu = generer_jeu(nombre_lignes, nombre_colonnes)
                     cles = placer_cles(jeu, nombre_cles)
@@ -1462,13 +1395,11 @@ while running:
                     cles_collectees = 0
                     ennemis = initialiser_ennemis(jeu, nombre_ennemis)
                 elif choix == "menu":
-                    # Réinitialiser le jeu
                     jeu = generer_jeu(nombre_lignes, nombre_colonnes)
                     cles = placer_cles(jeu, nombre_cles)
                     joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
                     cles_collectees = 0
                     ennemis = initialiser_ennemis(jeu, nombre_ennemis)
-                    # Retourner au menu
                     afficher_menu()
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 4:  # Mouse wheel up
@@ -1518,16 +1449,14 @@ while running:
     # Vérifier la collision avec les ennemis
     if verifier_collision_ennemis(joueur_pos, ennemis):
         if game_over() == "menu":
-            # Réinitialiser le jeu
             jeu = generer_jeu(nombre_lignes, nombre_colonnes)
             cles = placer_cles(jeu, nombre_cles)
             joueur_pos = [nombre_colonnes // 2, nombre_lignes // 2]
             cles_collectees = 0
             ennemis = initialiser_ennemis(jeu, nombre_ennemis)
-            # Retourner au menu
             afficher_menu()
 
-    # Dessiner l'hôpital
+    # Dessiner le jeu
     dessiner_jeu(jeu, joueur_pos, camera_offset)
 
     # Dessiner l'inventaire

@@ -24,4 +24,25 @@ Idées pour le futur:
       musique // fait
       effets sonores // 
 
+
+Niveau 2 :
+Map open field type jardin dans lequel y'a des arbres comme obstacles et des barrières qui font le contour de la map du niveau
+buissons qui permettent au joueur de se cacher
+  vision diminué
+  joueur ralentit dans le buisson et 1 seconde apres etre sortit du buisson
+partout dans la map y'a des trous un peu camouflé
+  lorsqu'on reste o,5 seconde(pt moins), le joueur tombe dans le trou et il retombe dans le niveau précédent avec toutes les clés, il doit juste retrouver la   sortie
+jauge de faim qui diminue assez rapidement(durée de 10 secondesou moins)
+si jauge 0% = mort, fin de jeu
+pomme sur la map qui lorsque le joueur passe dessus remonte de 10%(ou plus)
+y'a des piege à loup qui sont dispersés un peu partout qui immobilise 3,5 secondes(ou moins)
+  plus de piège que de pommes(genre le double)
+si le joueur retombe au niveau précédent, sa jauge de faim est réinitialisée
+sortie intercallée entre les barrières
+sortie possible que si la jauge de faim est à minimum 50%
+le joueur arrive d'un coté
+sortie de l'autre coté
+
+
+
 https://download.todesktop.com/230313mzl4w4u92/Cursor%20Setup%200.42.5%20-%20Build%2024111460bf2loz1-x64.exe

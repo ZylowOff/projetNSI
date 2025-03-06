@@ -16,7 +16,9 @@ Idées pour le futur:
   
 Rajouter des objets sur la map //
 L'histoire // 
-Graphismes // 
+Graphismes : clés //
+             murs //
+             sols //
 OST : effets sonores // 
 
 Niveau 2 :

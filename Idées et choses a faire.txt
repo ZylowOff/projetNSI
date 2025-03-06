@@ -1,11 +1,11 @@
 Idées pour le futur:
+  
   Spawn de la sortie // fait
   Amélioter vitesse déplacement // fait
-  Les ennemies :
-    création ennemies // fait
-    ennemies qui se déplacent // fait
-    ennemies qui one shot // fait
-    mémoire aux ennemies // fait
+  création ennemies // fait
+  ennemies qui se déplacent // fait
+  ennemies qui one shot // fait
+  mémoire aux ennemies // fait
   Vision du personnage // fait
   Petit cercle de vision autour du joueur // fait
   colision cone vision avec les murs // fait
@@ -13,17 +13,11 @@ Idées pour le futur:
   Donner une fonctionalité au bouton crédits // fait 
   Changer les dimensions de la fenetre par 1920, 1080 et recentrer les menus en conséquence // fait
   Mode plein écran // fait
-  Rajouter des objets sur la map //
-  Prochain niveau //
-  L'histoire // 
-  Graphisme : 
-      clés //
-      enemis //
-      map //
-  OST :
-      musique // fait
-      effets sonores // 
-
+  
+Rajouter des objets sur la map //
+L'histoire // 
+Graphismes // 
+OST : effets sonores // 
 
 Niveau 2 :
 Map open field type jardin dans lequel y'a des arbres comme obstacles et des barrières qui font le contour de la map du niveau

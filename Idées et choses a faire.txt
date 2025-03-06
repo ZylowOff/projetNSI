@@ -20,7 +20,8 @@ Graphismes : clés //
              murs //
              sols //
 OST : effets sonores // 
-asserts à faire // fait
+asserts // fait
+
 
 Niveau 2 :
 Map open field type jardin dans lequel y'a des arbres comme obstacles et des barrières qui font le contour de la map du niveau

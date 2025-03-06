@@ -866,19 +866,15 @@ def afficher_parametres():
         fenetre.fill(dark_purple)
         center_x = largeur // 2
 
-        # Bouton de retour
         bouton_retour = pygame.Rect(20, 20, 200, 60)
         draw_button(fenetre, bouton_retour, " Retour", pygame.font.Font(font_helpme, 30), hover_purple, light_purple, blanc, icon_text="B", icon_font=pygame.font.Font(font_arrows, 30))
 
-        # Bouton de sauvegarde
         bouton_sauvegarde = pygame.Rect(largeur - 220, 20, 200, 60)
         draw_button(fenetre, bouton_sauvegarde, " Sauvegarder", pygame.font.Font(font_helpme, 30), hover_purple, light_purple, blanc, icon_text="S", icon_font=pygame.font.Font(font_arrows, 30))
 
-        # Centrer les sections
         section_largeur_totale = sum([200 for _ in sections])
         section_x_debut = (largeur - section_largeur_totale) // 2
 
-        # Afficher les sections avec animation
         for i, section in enumerate(sections):
             couleur = blanc if i == section_choisie else gris
             texte = pygame.font.Font(None, 40).render(section, True, couleur)
@@ -886,13 +882,11 @@ def afficher_parametres():
             texte_rect = texte.get_rect(center=(section_x_debut + i * 200 + 100, 150))
             fenetre.blit(texte, texte_rect)
 
-            # Update alpha for animation
             if section_alpha[i] < section_target_alpha[i]:
                 section_alpha[i] = min(section_alpha[i] + section_alpha_speed, section_target_alpha[i])
             elif section_alpha[i] > section_target_alpha[i]:
                 section_alpha[i] = max(section_alpha[i] - section_alpha_speed, section_target_alpha[i])
 
-        # Afficher les paramètres pour la section choisie
         if section_choisie == 0:
             for i, (width, height) in enumerate(resolutions):
                 resolution_texte = f"{width} x {height}"
@@ -900,7 +894,6 @@ def afficher_parametres():
                 texte = pygame.font.Font(None, 40).render(resolution_texte, True, couleur)
                 texte_rect = texte.get_rect(center=(largeur // 2, 250 + i * 50))
 
-                # Draw a case around the selected resolution
                 if i == resolution_index:
                     case_rect = texte_rect.inflate(20, 10)
                     pygame.draw.rect(fenetre, light_purple, case_rect)
@@ -908,14 +901,12 @@ def afficher_parametres():
 
                 fenetre.blit(texte, texte_rect)
 
-            # Boutton pour basculer en plein écran
             texte_plein_ecran = "Plein écran: " + ("Oui" if plein_ecran else "Non")
             couleur = blanc if plein_ecran else gris
             texte = pygame.font.Font(None, 40).render(texte_plein_ecran, True, couleur)
             texte_rect = texte.get_rect(center=(largeur // 2, 250 + len(resolutions) * 50))
             fenetre.blit(texte, texte_rect)
 
-            # Bouton pour afficher les FPS
             texte_fps = "Afficher les FPS: " + ("Oui" if montrer_fps else "Non")
             couleur = blanc if montrer_fps else gris
             texte = pygame.font.Font(None, 40).render(texte_fps, True, couleur)

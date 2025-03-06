@@ -1,0 +1,15 @@
+{
+    "resolution_index": 5,
+    "plein_ecran": true,
+    "montrer_fps": false,
+    "volume": 0.5,
+    "controles": {
+        "Haut": 122,
+        "Bas": 115,
+        "Gauche": 113,
+        "Droite": 100
+    },
+    "index_taille_reticule": 0,
+    "index_type_reticule": 1,
+    "index_epaisseur_reticule": 1
+}

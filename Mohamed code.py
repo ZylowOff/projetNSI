@@ -855,7 +855,6 @@ def afficher_parametres():
     controle_selectione = None
     texte_controles = ["Haut", "Bas", "Gauche", "Droite"]
 
-    # Animation variables
     section_alpha = [100] * len(sections)
     section_target_alpha = [100] * len(sections)
     section_alpha[section_choisie] = 255
@@ -866,11 +865,11 @@ def afficher_parametres():
         fenetre.fill(dark_purple)
         center_x = largeur // 2
 
-        bouton_retour = pygame.Rect(20, 20, 200, 60)
+        bouton_retour = pygame.Rect(50, 50, 200, 60)
         draw_button(fenetre, bouton_retour, " Retour", pygame.font.Font(font_helpme, 30), hover_purple, light_purple, blanc, icon_text="B", icon_font=pygame.font.Font(font_arrows, 30))
 
-        bouton_sauvegarde = pygame.Rect(largeur - 220, 20, 200, 60)
-        draw_button(fenetre, bouton_sauvegarde, " Sauvegarder", pygame.font.Font(font_helpme, 30), hover_purple, light_purple, blanc, icon_text="S", icon_font=pygame.font.Font(font_arrows, 30))
+        bouton_sauvegarde = pygame.Rect(center_x - 150, hauteur - 100, 300, 60)
+        draw_button(fenetre, bouton_sauvegarde, "Sauvegarder", pygame.font.Font(font_helpme, 30), hover_purple, light_purple, blanc)
 
         section_largeur_totale = sum([200 for _ in sections])
         section_x_debut = (largeur - section_largeur_totale) // 2
@@ -916,22 +915,18 @@ def afficher_parametres():
         elif section_choisie == 1:
             center_x = largeur // 2
 
-            # Afficher le texte "Volume" et les paramètres
             texte = pygame.font.Font(None, 40).render("Volume:", True, blanc)
             texte_rect = texte.get_rect(center=(center_x - 150, 250))
             fenetre.blit(texte, texte_rect)
 
-            # Dessiner le slider de volume
             slider_rect_volume.centerx = center_x
             slider_rect_volume.centery = 300
             pygame.draw.rect(fenetre, gris, slider_rect_volume)
-            pygame.draw.rect(fenetre, blanc, slider_rect_volume, 2)  # Add border
+            pygame.draw.rect(fenetre, blanc, slider_rect_volume, 2)
 
-            # Dessiner le curseur du slider de volume
             volume_handle_pos = slider_rect_volume.left + (slider_pos_volume / 100) * slider_rect_volume.width
             pygame.draw.circle(fenetre, blanc, (volume_handle_pos, slider_rect_volume.centery), 8)
 
-            # Dessiner le texte du volume
             font = pygame.font.Font(None, 40)
             volume_text_surface = font.render(texte_volume, True, blanc)
             volume_texte_rect = volume_text_surface.get_rect(center=(center_x + 150, 300))
@@ -945,7 +940,6 @@ def afficher_parametres():
                 texte_rect = texte.get_rect(center=(center_x, 250 + i * 50))
                 fenetre.blit(texte, texte_rect)
 
-        # Gérer les événements
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()

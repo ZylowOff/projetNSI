@@ -22,7 +22,7 @@ Graphismes : murs //
 Ajouter les graphismes au code // 
 OST : effets sonores // 
 asserts // fait
-
+Ajouter le contexte de l'histoire entre le menu principal et la transistion // 
 
 Niveau 2 :
 Map open field type jardin dans lequel y'a des arbres comme obstacles et des barrières qui font le contour de la map du niveau

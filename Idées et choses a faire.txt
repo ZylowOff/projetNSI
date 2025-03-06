@@ -16,9 +16,10 @@ Idées pour le futur:
   
 Rajouter des objets sur la map //
 L'histoire // 
-Graphismes : clés //
-             murs //
+Graphismes : murs //
              sols //
+             sortie //
+Ajouter les graphismes au code // 
 OST : effets sonores // 
 asserts // fait
 

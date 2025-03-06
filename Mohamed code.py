@@ -4,6 +4,10 @@ import sys
 import math
 import os
 import json
+import ctypes
+
+myappid = 'echoesofthehollow.tropheensi.2025'
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 pygame.init()
 pygame.mixer.init()
@@ -39,15 +43,15 @@ fond_2 = "./assets/background/background_2.png"
 fond_3 = "./assets/background/background_3.png"
 fond_4 = "./assets/background/background_4.png"
 fond_5 = "./assets/background/background_5.png"
-# icone = pygame.image.load('icon.png')
+icone = pygame.image.load("./assets/icone.png")
 nom = "Echoes of the Hollow"
 
+pygame.display.set_caption(nom)
+pygame.display.set_icon(icone)
 plein_ecran = True
 fenetre = pygame.display.set_mode(
     (largeur, hauteur), pygame.FULLSCREEN if plein_ecran else pygame.RESIZABLE
 )
-pygame.display.set_caption(nom)
-# pygame.display.set_icon(icone)
 
 horloge = pygame.time.Clock()
 
@@ -1028,13 +1032,12 @@ def dessiner_fps(surface, clock):
 
 def musique_menu():
     pygame.mixer.music.load(son_menu)
-    pygame.mixer.music.set_volume(0.5)
+    pygame.mixer.music.set_volume(volume)
     pygame.mixer.music.play(-1)
-
 
 def musique_fond():
     pygame.mixer.music.load(son_fond)
-    pygame.mixer.music.set_volume(0.5)
+    pygame.mixer.music.set_volume(volume)
     pygame.mixer.music.play(-1)
 
 
@@ -1120,6 +1123,7 @@ cles = placer_cles(jeu, nombre_cles)
 ennemis = initialiser_ennemis(jeu, nombre_ennemis)
 
 load_settings()
+pygame.mixer.music.set_volume(volume)
 afficher_menu()
 pygame.mouse.set_visible(False)
 musique_fond()

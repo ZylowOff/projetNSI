@@ -14,7 +14,7 @@ Idées pour le futur:
   Changer les dimensions de la fenetre par 1920, 1080 et recentrer les menus en conséquence // fait
   Mode plein écran // fait
   
-Rajouter des objets sur la map //
+Rajouter des objets sur la map // fait
 L'histoire // 
 Graphismes : murs //
              sols //

@@ -9,6 +9,14 @@ from screeninfo import get_monitors  # Ajouter cette importation
 pygame.init()
 pygame.mixer.init()  # Initialize the mixer module
 
+# Charger les musiques
+try:
+    musique_poursuite = pygame.mixer.Sound("C:/Users/luiar/Downloads/projetNSI/OST/outlast_run.mp3")
+    musique_poursuite.set_volume(0.5)  # Ajuster le volume à 50%
+except:
+    print("Erreur lors du chargement de la musique de poursuite")
+    musique_poursuite = None
+
 # Variables pour gérer l'état de la musique
 est_en_poursuite = False
 temps_perdu_vue = 0
@@ -28,8 +36,8 @@ except:
 taille_case = int(min(largeur, hauteur) / 20)  # Ajuste la taille des cases proportionnellement
 
 # Recalculer les dimensions du labyrinthe en fonction de la résolution
-nombre_lignes = (hauteur // taille_case) * 8
-nombre_colonnes = (largeur // taille_case) * 8
+nombre_lignes = (hauteur // taille_case) * 2
+nombre_colonnes = (largeur // taille_case) * 2
 
 # Ajuster les paramètres de vision en fonction de la résolution
 rayon_vision_proche = taille_case * 2  # Ajuste le rayon de vision proche
@@ -45,9 +53,10 @@ bordeaux = (40, 0, 0)
 ENNEMIES = (255, 0, 0)  # Rouge pour les ennemis
 spray = (255, 165, 0)  # Couleur orange pour le spray au poivre
 marron_spray = (139, 69, 19, 100)  # Marron avec transparence
+JOUEUR = (0, 0, 255)  # Add this line - blue color for player
 
 # Load and scale player image
-joueur_img = pygame.image.load("./assets/characters/personnage.png")
+joueur_img = pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/personnage.png")
 joueur = pygame.transform.scale(joueur_img, (taille_case * 1.25, taille_case * 1.25))  # Scale to tile size
 sortie = (0, 255, 0)
 mur = (100, 40, 30)
@@ -67,8 +76,8 @@ horloge = pygame.time.Clock()
 
 # Paramètres de jeu
 nombre_cles = 3  
-cles_collectees = 0  
-nombre_ennemis = 5
+cles_collectees = 3  
+nombre_ennemis = 0
 vitesse_ennemis = 0.6 
 
 # Paramètres de la vision
@@ -142,52 +151,167 @@ derniere_position = [0, 0]
 musique_ambiance = None
 musique_ambiance_position = 0
 
-class Ennemi:
+# Ajouter ces constantes pour le jardin après les autres constantes
+DENSITE_BUISSONS = 0.03
+REDUCTION_VISION_BUISSON = 1
+VITESSE_NORMALE = 1
+VITESSE_BUISSON = 2
+
+# Ajouter ces couleurs après les autres couleurs
+HERBE = (34, 139, 34)
+BUISSON = (0, 100, 0)
+ARBRE = (255, 105, 180)
+BARRIERE = (139, 69, 19)
+
+COULEURS_JARDIN = {
+    "X": BARRIERE,
+    "B": BUISSON,
+    "A": ARBRE,
+    "S": sortie,
+    "J": JOUEUR,
+    " ": HERBE,
+}
+
+# Ajouter cette variable pour suivre le niveau actuel
+niveau_actuel = 1
+
+class Jardin:
+    def __init__(self, largeur, hauteur):
+        self.largeur = largeur
+        self.hauteur = hauteur
+        self.nb_lignes = hauteur // taille_case
+        self.nb_colonnes = largeur // taille_case
+        self.joueur_pos = self.placer_joueur_bord()
+        self.grille = self.generer_jardin()
+        self.camera_offset = [0, 0]
+        self.preparer_textures()
+
+    def generer_jardin(self):
+        grille = [[" " for _ in range(self.nb_colonnes)] for _ in range(self.nb_lignes)]
+
+        # Placer les barrières sur les bords
+        for i in range(self.nb_lignes):
+            grille[i][0] = grille[i][-1] = "X"
+        for j in range(self.nb_colonnes):
+            grille[0][j] = grille[-1][j] = "X"
+
+        # Placer les buissons
+        for _ in range(int(self.nb_lignes * self.nb_colonnes * DENSITE_BUISSONS)):
+            x, y = random.randint(1, self.nb_colonnes - 3), random.randint(1, self.nb_lignes - 3)
+            if grille[y][x] == " ":
+                for dy in range(2):
+                    for dx in range(2):
+                        if y + dy < self.nb_lignes and x + dx < self.nb_colonnes:
+                            grille[y + dy][x + dx] = "B"
+
+        # Placer les arbres
+        for _ in range(random.randint(20, 60)):
+            x, y = random.randint(1, self.nb_colonnes - 2), random.randint(1, self.nb_lignes - 2)
+            if grille[y][x] == " ":
+                grille[y][x] = "A"
+                if random.random() < 0.5 and y + 1 < self.nb_lignes - 1 and x + 1 < self.nb_colonnes - 1:
+                    grille[y + 1][x] = "A"
+                    grille[y][x + 1] = "A"
+                    grille[y + 1][x + 1] = "A"
+
+        self.placer_sortie(grille)
+        return grille
+
+    def placer_joueur_bord(self):
+        bord = random.randint(0, 3)
+        if bord % 2 == 0:  # Haut ou bas
+            x = random.randint(1, self.nb_colonnes - 2)
+            y = 1 if bord == 0 else self.nb_lignes - 2
+        else:  # Gauche ou droite
+            x = 1 if bord == 3 else self.nb_colonnes - 2
+            y = random.randint(1, self.nb_lignes - 2)
+        return [x, y]
+
+    def placer_sortie(self, grille):
+        bord = random.choice(["haut", "bas", "gauche", "droite"])
+        if bord in ["haut", "bas"]:
+            x = random.randint(1, self.nb_colonnes - 2)
+            y = 0 if bord == "haut" else self.nb_lignes - 1
+            grille[y][x] = "S"
+            if x > 0: grille[y][x - 1] = "X"
+            if x < self.nb_colonnes - 1: grille[y][x + 1] = "X"
+        else:
+            x = 0 if bord == "gauche" else self.nb_colonnes - 1
+            y = random.randint(1, self.nb_lignes - 2)
+            grille[y][x] = "S"
+            if y > 0: grille[y - 1][x] = "X"
+            if y < self.nb_lignes - 1: grille[y + 1][x] = "X"
+
+    def est_dans_buisson(self):
+        x, y = self.joueur_pos
+        return self.grille[y][x] == "B"
+
+    def preparer_textures(self):
+        self.textures = {}
+        for cle, couleur in COULEURS_JARDIN.items():
+            texture = pygame.Surface((taille_case, taille_case))
+            texture.fill(couleur)
+            self.textures[cle] = texture
+
+    def dessiner(self, fenetre):
+        fenetre.fill(noir)
+
+        # Calculer la zone visible
+        debut_x = max(0, int(self.camera_offset[0] // taille_case))
+        debut_y = max(0, int(self.camera_offset[1] // taille_case))
+        fin_x = min(self.nb_colonnes, debut_x + largeur // taille_case + 2)
+        fin_y = min(self.nb_lignes, debut_y + hauteur // taille_case + 2)
+
+        # Dessiner les éléments visibles
+        for i in range(debut_y, fin_y):
+            for j in range(debut_x, fin_x):
+                x = j * taille_case - self.camera_offset[0]
+                y = i * taille_case - self.camera_offset[1]
+                element = self.grille[i][j]
+                fenetre.blit(self.textures[element], (x, y))
+
+        # Effet de brouillard dans les buissons
+        if self.est_dans_buisson():
+            masque = pygame.Surface((largeur, hauteur), pygame.SRCALPHA)
+            masque.fill((0, 0, 0, int(255 * REDUCTION_VISION_BUISSON)))
+            fenetre.blit(masque, (0, 0))
+
+        # Dessiner le joueur
+        joueur_x = self.joueur_pos[0] * taille_case - self.camera_offset[0]
+        joueur_y = self.joueur_pos[1] * taille_case - self.camera_offset[1]
+        fenetre.blit(self.textures["J"], (joueur_x, joueur_y))
+
+class ennemi:
     def __init__(self, x, y):
         self.x = x
         self.y = y
         self.direction = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
-        self.compteur_deplacement = 0
-        self.cone_vision = 8
-        self.angle_vision = 120
-        # Nouvelles vitesses
+        self.pas_patrouille = 0
+        self.max_pas_patrouille = random.randint(5, 10)
+        self.derniere_pos_joueur = None
+        self.temps_memoire = 0
+        self.duree_memoire_max = 180  # 3 secondes à 60 FPS
         self.vitesse_patrouille = VITESSE_PATROUILLE
         self.vitesse_poursuite = VITESSE_POURSUITE
         self.vitesse_actuelle = self.vitesse_patrouille
-        # Variables pour la mémoire
-        self.derniere_pos_joueur = None
-        self.temps_memoire = 0
-        self.duree_memoire_max = 180
-        # Variables pour la patrouille
-        self.pas_patrouille = 0
-        self.max_pas_patrouille = random.randint(5, 10)
         self.ralenti = False
         self.temps_ralenti = 0
-        self.vitesse_ralentie = VITESSE_RALENTIE  # 10% plus lent
 
     def peut_voir_joueur(self, joueur_pos, hopital):
-        # Calculer la distance entre l'ennemi et le joueur
+        if self.ralenti:
+            return False
+            
         dx = joueur_pos[0] - self.x
         dy = joueur_pos[1] - self.y
         distance = math.sqrt(dx*dx + dy*dy)
-
-        if distance > self.cone_vision:
+        
+        if distance > 8:  # Distance de vision maximale
             return False
+            
+        # Vérifier s'il y a un mur entre l'ennemi et le joueur
+        return not a_mur_entre([self.x, self.y], joueur_pos, hopital)
 
-        # Vérification de la ligne de vue (pas d'obstacles)
-        x, y = self.x, self.y
-        pas = 0.1
-        longueur = math.sqrt(dx*dx + dy*dy)
-        if longueur > 0:
-            dx, dy = dx/longueur, dy/longueur
-            for i in range(int(longueur/pas)):
-                x += dx * pas
-                y += dy * pas
-                if hopital[int(y)][int(x)] == "#":
-                    return False
-        return True
-
-
+# Ensuite, placez cette fonction après la définition de la classe ennemi
 def initialiser_ennemis(hopital, nombre_ennemis):
     ennemis = []
     cases_vides = [(j, i) for i, ligne in enumerate(hopital)
@@ -195,10 +319,9 @@ def initialiser_ennemis(hopital, nombre_ennemis):
     for _ in range(nombre_ennemis):
         if cases_vides:
             x, y = random.choice(cases_vides)
-            ennemis.append(Ennemi(x, y))
+            ennemis.append(ennemi(x, y))
             cases_vides.remove((x, y))
     return ennemis
-
 
 def deplacer_ennemis(hopital, ennemis, joueur_pos):
     global est_en_poursuite, temps_perdu_vue, musique_ambiance_position
@@ -668,14 +791,82 @@ def deplacement_valide(hopital, pos):
 
 
 def afficher_victoire():
-    arreter_musiques()
-    fenetre.fill(noir)
-    texte = pygame.font.Font(None, 60).render("Victoire !", True, blanc)
-    texte_rect = texte.get_rect(center=(largeur // 2, hauteur // 2))
-    fenetre.blit(texte, texte_rect)
-    pygame.display.flip()
-    pygame.time.delay(3000)
+    global niveau_actuel, running, hopital, joueur_pos, ennemis
+    
+    if niveau_actuel == 1:
+        # Transition vers le niveau 2
+        niveau_actuel = 2
+        pygame.time.delay(2000)  # Pause de 2 secondes
+        
+        # Initialiser le jardin
+        jardin = Jardin(largeur, hauteur)
+        
+        # Boucle du niveau 2
+        running_jardin = True
+        while running_jardin:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running_jardin = False
+                    running = False
+                    return
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        pygame.mouse.set_visible(True)
+                        choix = afficher_menu_pause()
+                        pygame.mouse.set_visible(False)
+                        if choix == "menu":
+                            running_jardin = False
+                            return "menu"
 
+            vitesse = VITESSE_BUISSON if jardin.est_dans_buisson() else VITESSE_NORMALE
+            touches = pygame.key.get_pressed()
+            dx, dy = 0, 0
+
+            if touches[pygame.K_z] or touches[pygame.K_UP]: dy = -1
+            if touches[pygame.K_s] or touches[pygame.K_DOWN]: dy = 1
+            if touches[pygame.K_q] or touches[pygame.K_LEFT]: dx = -1
+            if touches[pygame.K_d] or touches[pygame.K_RIGHT]: dx = 1
+
+            nouvelle_pos = [jardin.joueur_pos[0] + dx, jardin.joueur_pos[1] + dy]
+            if (0 <= nouvelle_pos[1] < jardin.nb_lignes and 
+                0 <= nouvelle_pos[0] < jardin.nb_colonnes and 
+                jardin.grille[nouvelle_pos[1]][nouvelle_pos[0]] not in ["X", "A"]):
+                jardin.joueur_pos = nouvelle_pos
+
+            # Mise à jour de la caméra
+            jardin.camera_offset = [
+                max(0, min(jardin.joueur_pos[0] * taille_case - largeur // 2, 
+                          jardin.nb_colonnes * taille_case - largeur)),
+                max(0, min(jardin.joueur_pos[1] * taille_case - hauteur // 2, 
+                          jardin.nb_lignes * taille_case - hauteur))
+            ]
+
+            if jardin.grille[nouvelle_pos[1]][nouvelle_pos[0]] == "S":
+                # Victoire finale
+                fenetre.fill(noir)
+                font = pygame.font.Font(None, 74)
+                texte = font.render("Félicitations ! Jeu terminé !", True, blanc)
+                texte_rect = texte.get_rect(center=(largeur//2, hauteur//2))
+                fenetre.blit(texte, texte_rect)
+                pygame.display.flip()
+                pygame.time.delay(3000)
+                running_jardin = False
+                running = False
+                return
+
+            jardin.dessiner(fenetre)
+            pygame.display.flip()
+            horloge.tick(60)
+    else:
+        # Victoire finale (niveau 2)
+        fenetre.fill(noir)
+        font = pygame.font.Font(None, 74)
+        texte = font.render("Félicitations ! Jeu terminé !", True, blanc)
+        texte_rect = texte.get_rect(center=(largeur//2, hauteur//2))
+        fenetre.blit(texte, texte_rect)
+        pygame.display.flip()
+        pygame.time.delay(3000)
+        running = False
 
 def afficher_credits():
     # Constants for animation
@@ -721,14 +912,14 @@ def afficher_credits():
         # Draw each credit entry
         for text, size in credits_data:
             if text:  # Only render non-empty strings
-                texte = pygame.font.Font("./assets/font/HelpMe.ttf", size).render(text, True, blanc)
+                texte = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/HelpMe.ttf", size).render(text, True, blanc)
                 texte_rect = texte.get_rect(center=(largeur // 2, current_y))
                 
                 # Only draw if within screen bounds with some margin
                 if -50 <= current_y <= hauteur + 50:
                     # Add glow effect for titles
                     if size == TITLE_SIZE:
-                        glow = pygame.font.Font("./assets/font/HelpMe.ttf", size).render(text, True, (100, 100, 100))
+                        glow = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/HelpMe.ttf", size).render(text, True, (100, 100, 100))
                         glow_rect = glow.get_rect(center=(largeur // 2, current_y))
                         fenetre.blit(glow, (glow_rect.x + 2, glow_rect.y + 2))
                     
@@ -791,11 +982,11 @@ def afficher_menu():
 
     # Charger les différentes couches du fond
     background_layers = [
-        pygame.image.load("./assets/background/background_1.png"),
-        pygame.image.load("./assets/background/background_2.png"),
-        pygame.image.load("./assets/background/background_3.png"),
-        pygame.image.load("./assets/background/background_4.png"),
-        pygame.image.load("./assets/background/background_5.png")
+        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_1.png"),
+        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_2.png"),
+        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_3.png"),
+        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_4.png"),
+        pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_5.png")
     ]
     
     # Augmenter encore le facteur d'échelle pour plus de marge de mouvement
@@ -827,7 +1018,7 @@ def afficher_menu():
 
         # Reste du code inchangé...
         titre = pygame.font.Font(
-            "./assets/font/November.ttf", 150).render("Echoes of the Hollow", True, blanc)
+            "C:/Users/luiar/Downloads/projetNSI/November.ttf", 150).render("Echoes of the Hollow", True, blanc)
         titre_rect = titre.get_rect(center=(largeur//2, hauteur//6))
         fenetre.blit(titre, titre_rect)
 
@@ -850,7 +1041,7 @@ def afficher_menu():
                 couleur = bordeaux
 
             bords_arrondis(fenetre, couleur, bouton, 15)
-            texte_rendu = pygame.font.Font("./assets/font/HelpMe.ttf", taille_texte).render(texte, True, blanc)
+            texte_rendu = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/HelpMe.ttf", taille_texte).render(texte, True, blanc)
             fenetre.blit(texte_rendu, (bouton.centerx - texte_rendu.get_width() // 2,
                                       bouton.centery - texte_rendu.get_height() // 2))
 
@@ -882,7 +1073,7 @@ def afficher_menu_pause():
     global resolution_index, largeur, hauteur, fenetre
     
     # Load the background image
-    background = pygame.image.load("./assets/background/background_1.png")  # Ensure the path is correct
+    background = pygame.image.load("C:/Users/luiar/Downloads/projetNSI/texture/background_1.png")  # Ensure the path is correct
     background = pygame.transform.scale(background, (largeur, hauteur))  # Scale to fit the window
 
     while True:
@@ -890,7 +1081,7 @@ def afficher_menu_pause():
         fenetre.blit(background, (0, 0))
 
         # Title at the top
-        titre = pygame.font.Font("./assets/font/November.ttf", 100).render("Echoes of the Hollow", True, blanc)
+        titre = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/November.ttf", 100).render("Echoes of the Hollow", True, blanc)
         titre_rect = titre.get_rect(center=(largeur // 2, hauteur // 6))
         fenetre.blit(titre, titre_rect)
 
@@ -904,8 +1095,8 @@ def afficher_menu_pause():
         bords_arrondis(fenetre, couleur_retour, bouton_retour, 15)
         
         # Draw arrow and text separately
-        texte_arrow = pygame.font.Font("./assets/font/Arrows.ttf", 40).render("R", True, blanc)
-        texte_retour = pygame.font.Font("./assets/font/HelpMe.ttf", 30).render("Retour", True, blanc)
+        texte_arrow = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/Arrows.ttf", 40).render("R", True, blanc)
+        texte_retour = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/HelpMe.ttf", 30).render("Retour", True, blanc)
         
         # Position arrow and text
         fenetre.blit(texte_arrow, (bouton_retour.x + 15, bouton_retour.centery - texte_arrow.get_height() // 2))
@@ -932,7 +1123,7 @@ def afficher_menu_pause():
                 couleur = bordeaux
 
             bords_arrondis(fenetre, couleur, bouton, 15)
-            texte_rendu = pygame.font.Font("./assets/font/HelpMe.ttf", taille_texte).render(texte, True, blanc)
+            texte_rendu = pygame.font.Font("C:/Users/luiar/Downloads/projetNSI/HelpMe.ttf", taille_texte).render(texte, True, blanc)
             fenetre.blit(texte_rendu, (bouton.centerx - texte_rendu.get_width() // 2,
                                       bouton.centery - texte_rendu.get_height() // 2))
 
@@ -1218,13 +1409,13 @@ def afficher_parametres():
 
 
 def musique_menu():
-    pygame.mixer.music.load("./assets/music/S.T.A.L.K.E.R..mp3")  # Ensure the path is correct
+    pygame.mixer.music.load("C:/Users/luiar/Downloads/projetNSI/OST/S.T.A.L.K.E.R..mp3")  # Ensure the path is correct
     pygame.mixer.music.set_volume(0.5)
     pygame.mixer.music.play(-1)
 
 
 def musique_fond():
-    pygame.mixer.music.load("./assets/music/Amnesia-02.mp3")
+    pygame.mixer.music.load("C:/Users/luiar/Downloads/projetNSI/OST/Amnesia_02.mp3")
     pygame.mixer.music.set_volume(0.5)
     pygame.mixer.music.play(-1)
 
@@ -1332,7 +1523,7 @@ def utiliser_spray(joueur_pos, angle_de_vue, ennemis, hopital):
 # Modifiez la fonction qui démarre la musique d'ambiance
 def demarrer_musique_ambiance():
     try:
-        pygame.mixer.music.load("./assets/music/Amnesia_02.mp3")
+        pygame.mixer.music.load("C:/Users/luiar/Downloads/projetNSI/OST/Amnesia_02.mp3")
         pygame.mixer.music.play(-1)
     except:
         print("Erreur lors du chargement de la musique d'ambiance")
@@ -1636,5 +1827,35 @@ def mettre_a_jour_camera(joueur_pos):
     # S'assurer que la position finale respecte toujours les limites
     camera_offset[0] = max(0, min(camera_offset[0], limite_droite))
     camera_offset[1] = max(0, min(camera_offset[1], limite_bas))
+
+class ennemi:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.direction = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+        self.pas_patrouille = 0
+        self.max_pas_patrouille = random.randint(5, 10)
+        self.derniere_pos_joueur = None
+        self.temps_memoire = 0
+        self.duree_memoire_max = 180  # 3 secondes à 60 FPS
+        self.vitesse_patrouille = VITESSE_PATROUILLE
+        self.vitesse_poursuite = VITESSE_POURSUITE
+        self.vitesse_actuelle = self.vitesse_patrouille
+        self.ralenti = False
+        self.temps_ralenti = 0
+
+    def peut_voir_joueur(self, joueur_pos, hopital):
+        if self.ralenti:
+            return False
+            
+        dx = joueur_pos[0] - self.x
+        dy = joueur_pos[1] - self.y
+        distance = math.sqrt(dx*dx + dy*dy)
+        
+        if distance > 8:  # Distance de vision maximale
+            return False
+            
+        # Vérifier s'il y a un mur entre l'ennemi et le joueur
+        return not a_mur_entre([self.x, self.y], joueur_pos, hopital)
 
 pygame.quit()

@@ -16,23 +16,27 @@ largeur = 1920
 hauteur = 1080
 taille_case = 50
 
-noir = (0, 0, 0)
-blanc = (255, 255, 255)
-gris = (200, 200, 200)
-gris_fonce = (50, 50, 50)
-sortie = (0, 255, 0)
-mur = (100, 40, 30)
-sol = (115, 109, 115)
-cle = (255, 223, 0)
-ennemi_couleur = (255, 0, 0)
-bordeaux = (40, 0, 0)
-dark_purple = (48, 25, 52)
-light_purple = (75, 0, 130)
-hover_purple = (100, 40, 160)
+noir = '#000000'
+blanc = '#ffffff'
+gris = '#969696'
+gris2 = '#584a5a'
+sortie = '#00ff00'
+mur = '#64281e'
+sol = '#736d73'
+cle = '#ffdf00'
+ennemi_couleur = '#ff0000'
+bordeaux = '#280000'
+dark_purple = '#180c1a'
+light_purple = '#4b0082'
+hover_purple = '#6428a0'
 
 fichier_parametres = "./settings.json"
 joueur_img = pygame.image.load("./assets/characters/personnage.png")
 joueur = pygame.transform.scale(joueur_img, (taille_case * 1.25, taille_case * 1.25))
+button_img = pygame.image.load("./assets/bouton.png")
+button = pygame.transform.scale(button_img, (525, 100))
+button_hover_img = pygame.image.load("./assets/bouton2.png")
+button_hover_img = pygame.transform.scale(button_hover_img, (525, 140))
 son_menu = "./assets/music/S.T.A.L.K.E.R..mp3"
 son_fond = "./assets/music/Amnesia-02.mp3"
 font_helpme = "./assets/font/HelpMe.ttf"
@@ -44,6 +48,11 @@ fond_3 = "./assets/background/background_3.png"
 fond_4 = "./assets/background/background_4.png"
 fond_5 = "./assets/background/background_5.png"
 icone = pygame.image.load("./assets/icone.png")
+logo_img = pygame.image.load("./assets/logo.png")
+logo_width, logo_height = logo_img.get_size()
+desired_width = largeur // 3
+aspect_ratio = logo_height / logo_width
+scaled_logo = pygame.transform.scale(logo_img, (desired_width, int(desired_width * aspect_ratio)))
 nom = "Echoes of the Hollow"
 
 pygame.display.set_caption(nom)
@@ -525,7 +534,7 @@ def afficher_credits():
     y_offset = float(hauteur)
 
     while True:
-        fenetre.fill(noir)
+        fenetre.fill(dark_purple)
 
         current_y = int(y_offset)
 
@@ -580,42 +589,26 @@ def bords_arrondis(surface, couleur, rect, radius):
     pygame.draw.rect(surface, couleur, (x, y + radius, width, height - 2 * radius))
 
 
-def draw_button(surface, rect, text, font, hover_couleur, default_couleur, text_couleur, border_radius=15, icon_text=None, icon_font=None):
+def draw_button(surface, rect, text, font, hover_color, default_color, text_color, border_radius=15, icon_text=None, icon_font=None):
     mouse_x, mouse_y = pygame.mouse.get_pos()
     if rect.collidepoint(mouse_x, mouse_y):
-        couleur = hover_couleur
-        rect = rect.inflate(20, 20)
+        color = hover_color
     else:
-        couleur = default_couleur
+        color = default_color
 
-    bords_arrondis(surface, couleur, rect, border_radius)
+    pygame.draw.rect(surface, color, rect, border_radius=border_radius)
     
     if icon_text and icon_font:
-        icon_surface = icon_font.render(icon_text, True, text_couleur)
-        surface.blit(
-            icon_surface,
-            (
-                rect.left + 10,
-                rect.centery - icon_surface.get_height() // 2,
-            ),
-        )
-        text_surface = font.render(text, True, text_couleur)
-        surface.blit(
-            text_surface,
-            (
-                rect.left + 40,
-                rect.centery - text_surface.get_height() // 2,
-            ),
-        )
+        icon_surface = icon_font.render(icon_text, True, text_color)
+        icon_rect = icon_surface.get_rect(center=(rect.left + 30, rect.centery))
+        surface.blit(icon_surface, icon_rect)
+        text_surface = font.render(text, True, text_color)
+        text_rect = text_surface.get_rect(midleft=(icon_rect.right + 10, rect.centery))
     else:
-        text_surface = font.render(text, True, text_couleur)
-        surface.blit(
-            text_surface,
-            (
-                rect.centerx - text_surface.get_width() // 2,
-                rect.centery - text_surface.get_height() // 2,
-            ),
-        )
+        text_surface = font.render(text, True, text_color)
+        text_rect = text_surface.get_rect(center=rect.center)
+    
+    surface.blit(text_surface, text_rect)
 
 
 def handle_event(event, boutons):
@@ -651,7 +644,7 @@ def afficher_menu():
     global cles_collectees, sprays_collectes, bandages_collectes, endurance_actuelle
 
     cles_collectees = 0
-    # sprays_collectes = 0
+    # sprays_collectees = 0
     # bandages_collectes = 0
     # endurance_actuelle = endurance_max
 
@@ -682,50 +675,28 @@ def afficher_menu():
 
         center_x = largeur / 2
         center_y = hauteur / 2
-        rel_x = (mouse_x - center_x) / (
-            center_x * 0.7
-        )
+        rel_x = (mouse_x - center_x) / (center_x * 0.7)
         rel_y = (mouse_y - center_y) / (center_y * 0.7)
 
         for i, layer in enumerate(couches_fond):
-            decalage_x = decalage_x_initial - rel_x * facteurs_parralaxe[i] * (
-                echelle_largeur - largeur
-            )
+            decalage_x = decalage_x_initial - rel_x * facteurs_parralaxe[i] * (echelle_largeur - largeur)
             decalage_y = -rel_y * facteurs_parralaxe[i] * (echelle_hauteur - hauteur)
-
             fenetre.blit(layer, (decalage_x, decalage_y))
 
-        titre = pygame.font.Font(font_november, 150).render(nom, True, blanc)
-        titre_rect = titre.get_rect(center=(largeur // 2, hauteur // 6))
-        fenetre.blit(titre, titre_rect)
+        logo_rect = scaled_logo.get_rect(center=(largeur // 2, hauteur // 4.5))
+        fenetre.blit(scaled_logo, logo_rect)
 
-        espace_boutton = 120
-        y_depart = hauteur // 3
+        espace_boutton = 150  # Adjusted space between buttons
+        y_depart = hauteur // 2.5
         boutons = [
-            (
-                pygame.Rect(largeur // 2 - 250, y_depart, 500, 90),
-                "Nouvelle Partie",
-                40
-            ),
-            (
-                pygame.Rect(largeur // 2 - 250, y_depart + espace_boutton, 500, 90),
-                "Paramètres",
-                40,
-            ),
-            (
-                pygame.Rect(largeur // 2 - 250, y_depart + espace_boutton * 2, 500, 90),
-                "Crédits",
-                40,
-            ),
-            (
-                pygame.Rect(largeur // 2 - 250, y_depart + espace_boutton * 3, 500, 90),
-                "Quitter",
-                40,
-            ),
+            (pygame.Rect(largeur // 2 - 250, y_depart, 500, 90), "Nouvelle Partie", 40),
+            (pygame.Rect(largeur // 2 - 250, y_depart + espace_boutton, 500, 90), "Paramètres", 40),
+            (pygame.Rect(largeur // 2 - 250, y_depart + espace_boutton * 2, 500, 90), "Crédits", 40),
+            (pygame.Rect(largeur // 2 - 250, y_depart + espace_boutton * 3, 500, 90), "Quitter", 40),
         ]
 
         for bouton, texte, taille_texte in boutons:
-            draw_button(fenetre, bouton, texte, pygame.font.Font(font_helpme, taille_texte), (255, 0, 0), bordeaux, blanc)
+            draw_button(fenetre, bouton, texte, pygame.font.Font(font_helpme, taille_texte), hover_purple, light_purple, blanc)
 
         pygame.display.flip()
 
@@ -780,7 +751,7 @@ def afficher_menu_pause():
         ]
 
         for bouton, texte, taille_texte in boutons:
-            draw_button(fenetre, bouton, texte, pygame.font.Font(font_helpme, taille_texte), (255, 0, 0), bordeaux, blanc)
+            draw_button(fenetre, bouton, texte, pygame.font.Font(font_helpme, taille_texte), '#6428a0', '#301934', blanc)
 
         pygame.display.flip()
 
@@ -865,14 +836,22 @@ def afficher_parametres():
     section_target_alpha[section_choisie] = 255
     section_alpha_speed = 5
 
+    presets = {
+        "ZQSD": {"Haut": pygame.K_z, "Bas": pygame.K_s, "Gauche": pygame.K_q, "Droite": pygame.K_d},
+        "WASD": {"Haut": pygame.K_w, "Bas": pygame.K_s, "Gauche": pygame.K_a, "Droite": pygame.K_d},
+        "Flèches": {"Haut": pygame.K_UP, "Bas": pygame.K_DOWN, "Gauche": pygame.K_LEFT, "Droite": pygame.K_RIGHT},
+        "Personalizé": controles
+    }
+    preset_selectionne = "Personalizé"
+
     while True:
-        fenetre.fill(dark_purple)
+        fenetre.fill(pygame.Color(dark_purple))  # Ensure dark_purple is used here
         center_x = largeur // 2
 
         bouton_retour = pygame.Rect(50, 50, 200, 60)
-        draw_button(fenetre, bouton_retour, " Retour", pygame.font.Font(font_helpme, 30), hover_purple, light_purple, blanc, icon_text="B", icon_font=pygame.font.Font(font_arrows, 30))
+        draw_button(fenetre, bouton_retour, "Retour", pygame.font.Font(font_helpme, 30), hover_purple, light_purple, blanc, icon_text="B", icon_font=pygame.font.Font(font_arrows, 30))
 
-        bouton_sauvegarde = pygame.Rect(center_x - 150, hauteur - 100, 300, 60)
+        bouton_sauvegarde = pygame.Rect(center_x - 150, hauteur - 150, 300, 60)
         draw_button(fenetre, bouton_sauvegarde, "Sauvegarder", pygame.font.Font(font_helpme, 30), hover_purple, light_purple, blanc)
 
         section_largeur_totale = sum([200 for _ in sections])
@@ -937,12 +916,40 @@ def afficher_parametres():
             fenetre.blit(volume_text_surface, volume_texte_rect)
 
         elif section_choisie == 2:
+            preset_y = 300
+            preset_x = center_x - 130  # Adjust the x position for presets column
+            control_x = center_x + 130  # Adjust the x position for controls column
+
+            # Draw "Presets" label
+            texte_presets = pygame.font.Font(None, 40).render("Presets:", True, blanc)
+            texte_presets_rect = texte_presets.get_rect(center=(preset_x, preset_y - 50))
+            fenetre.blit(texte_presets, texte_presets_rect)
+
+            # Draw "Controls" label
+            texte_controls = pygame.font.Font(None, 40).render("Controls:", True, blanc)
+            texte_controls_rect = texte_controls.get_rect(center=(control_x, preset_y - 50))
+            fenetre.blit(texte_controls, texte_controls_rect)
+
+            for preset in presets:
+                couleur = blanc if preset == preset_selectionne else gris2
+                texte = pygame.font.Font(None, 40).render(preset, True, couleur)
+                texte_rect = texte.get_rect(center=(preset_x, preset_y))
+                fenetre.blit(texte, texte_rect)
+                preset_y += 50
+
+            control_y = 300  # Adjusted y position for controls column
             for i, action in enumerate(texte_controles):
                 key_name = pygame.key.name(controles[action]).upper()
-                couleur = blanc if controle_selectione == action else gris
+                couleur = blanc if preset_selectionne == "Personalizé" else gris2
                 texte = pygame.font.Font(None, 40).render(f"{action}: {key_name}", True, couleur)
-                texte_rect = texte.get_rect(center=(center_x, 250 + i * 50))
+                texte_rect = texte.get_rect(center=(control_x, control_y + i * 50))
                 fenetre.blit(texte, texte_rect)
+
+                if preset_selectionne == "Personalizé":
+                    if controle_selectione == action:
+                        pygame.draw.rect(fenetre, (100, 100, 100), texte_rect.inflate(10, 10), 2)
+                    elif texte_rect.collidepoint(pygame.mouse.get_pos()):
+                        pygame.draw.rect(fenetre, (100, 100, 100), texte_rect.inflate(10, 10), 2)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -959,7 +966,7 @@ def afficher_parametres():
                     section_choisie += 1
                     section_target_alpha[section_choisie - 1] = 100
                     section_target_alpha[section_choisie] = 255
-                elif controle_selectione:
+                elif controle_selectione and preset_selectionne == "Personalizé":
                     controles[controle_selectione] = event.key
                     controle_selectione = None
 
@@ -1015,9 +1022,20 @@ def afficher_parametres():
                         pygame.mixer.music.set_volume(volume)
 
                 elif section_choisie == 2:
-                    for i, action in enumerate(texte_controles):
-                        if 250 + i * 50 - 25 <= mouse_y <= 250 + i * 50 + 25:
-                            controle_selectione = action
+                    preset_y = 300
+                    for preset in presets:
+                        preset_rect = pygame.Rect(preset_x - 100, preset_y - 20, 200, 40)
+                        if preset_rect.collidepoint(event.pos):
+                            preset_selectionne = preset
+                            controles = presets[preset]
+                            break
+                        preset_y += 50
+
+                    if preset_selectionne == "Personalizé":
+                        for i, action in enumerate(texte_controles):
+                            texte_rect = pygame.font.Font(None, 40).render(f"{action}: {pygame.key.name(controles[action]).upper()}", True, blanc).get_rect(center=(control_x, 300 + i * 50))
+                            if texte_rect.collidepoint(event.pos):
+                                controle_selectione = action
 
         pygame.display.flip()
 
@@ -1057,7 +1075,7 @@ def afficher_transition_niveau(niveau):
     )
 
     for alpha in range(0, 256, 5):
-        fenetre.fill(noir)
+        fenetre.fill(dark_purple)
         texte_niveau.set_alpha(alpha)
         texte_sous_titre.set_alpha(alpha)
         fenetre.blit(texte_niveau, texte_niveau_rect)
@@ -1068,7 +1086,7 @@ def afficher_transition_niveau(niveau):
     pygame.time.delay(3000)
 
     for alpha in range(255, -1, -5):
-        fenetre.fill(noir)
+        fenetre.fill(dark_purple)
         texte_niveau.set_alpha(alpha)
         texte_sous_titre.set_alpha(alpha)
         fenetre.blit(texte_niveau, texte_niveau_rect)
@@ -1086,7 +1104,7 @@ def dessiner_barre_endurance(surface):
 
     largeur_actuelle = int((endurance_actuelle / endurance_max) * largeur_barre)
 
-    pygame.draw.rect(surface, gris_fonce, (x, y, largeur_barre, hauteur_barre))
+    pygame.draw.rect(surface, gris, (x, y, largeur_barre, hauteur_barre))
     pygame.draw.rect(surface, (0, 255, 0), (x, y, largeur_actuelle, hauteur_barre))
     pygame.draw.rect(surface, blanc, (x, y, largeur_barre, hauteur_barre), 2)
     '''
@@ -1094,27 +1112,40 @@ def dessiner_barre_endurance(surface):
 
 def load_settings():
     global resolution_index, largeur, hauteur, plein_ecran, montrer_fps, volume, controles
+    parametres_par_defaut = {
+        "resolution_index": 5,
+        "plein_ecran": True,
+        "montrer_fps": False,
+        "volume": 0.5,
+        "controles": {
+            "Haut": pygame.K_z,
+            "Bas": pygame.K_s,
+            "Gauche": pygame.K_q,
+            "Droite": pygame.K_d
+        }
+    }
     try:
         with open(fichier_parametres, "r") as file:
             settings = json.load(file)
-            resolution_index = settings.get("resolution_index", resolution_index)
+            resolution_index = settings.get("resolution_index", parametres_par_defaut["resolution_index"])
             largeur, hauteur = resolutions[resolution_index]
-            plein_ecran = settings.get("plein_ecran", plein_ecran)
-            montrer_fps = settings.get("montrer_fps", montrer_fps)
-            volume = settings.get("volume", volume)
+            plein_ecran = settings.get("plein_ecran", parametres_par_defaut["plein_ecran"])
+            montrer_fps = settings.get("montrer_fps", parametres_par_defaut["montrer_fps"])
+            volume = settings.get("volume", parametres_par_defaut["volume"])
             pygame.mixer.music.set_volume(volume)
-            controles = settings.get("controles", controles)
+            controles = settings.get("controles", parametres_par_defaut["controles"])
     except FileNotFoundError:
-        pass
+        save_settings(parametres_par_defaut)
 
-def save_settings():
-    settings = {
-        "resolution_index": resolution_index,
-        "plein_ecran": plein_ecran,
-        "montrer_fps": montrer_fps,
-        "volume": volume,
-        "controles": controles
-    }
+def save_settings(settings=None):
+    if settings is None:
+        settings = {
+            "resolution_index": resolution_index,
+            "plein_ecran": plein_ecran,
+            "montrer_fps": montrer_fps,
+            "volume": volume,
+            "controles": controles
+        }
     with open(fichier_parametres, "w") as file:
         json.dump(settings, file, indent=4)
 

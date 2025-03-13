@@ -1,12 +1,12 @@
 {
     "resolution_index": 4,
     "plein_ecran": true,
-    "montrer_fps": true,
-    "volume": 0.0,
+    "montrer_fps": false,
+    "volume": 0.5,
     "controles": {
-        "Haut": 119,
+        "Haut": 122,
         "Bas": 115,
-        "Gauche": 97,
+        "Gauche": 113,
         "Droite": 100
     }
 }

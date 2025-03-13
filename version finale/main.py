@@ -133,7 +133,7 @@ gris_fonce = '#323232'
 gris_clair = '#969696'
 gris2 = '#584a5a'
 bordeaux = '#280000'
-couleur_ennemis = '#ff0000'
+couleur_ennemis = (255, 0, 0, 1)
 spray = '#ffa500'
 marron_spray = (139, 69, 19, 100)
 joueur = '#0000ff'
@@ -148,6 +148,9 @@ bouteille_verre = '#8b4513'
 
 joueur_img = pygame.image.load("./texture/personnage.png")
 joueur = pygame.transform.scale(joueur_img, (taille_case * 1.25, taille_case * 1.25))
+
+zombie_img = pygame.image.load("./texture/zombie.png")
+zombie_img = pygame.transform.scale(zombie_img, (taille_case * 1.25, taille_case * 1.25))
 
 fenetre = pygame.display.set_mode((largeur, hauteur), pygame.FULLSCREEN if plein_ecran else pygame.RESIZABLE)
 pygame.display.set_caption("Echoes of the Hollow")
@@ -383,7 +386,7 @@ def afficher_parametres():
     preset_selectionne = "Personnalisé"
 
     while True:
-        fenetre.fill(pygame.Color(violet_fonce))  # Ensure dark_purple is used here
+        fenetre.fill(pygame.Color(violet_fonce))
         center_x = largeur // 2
 
         bouton_retour = pygame.Rect(50, 50, 200, 60)
@@ -455,15 +458,13 @@ def afficher_parametres():
 
         elif section_choisie == 2:
             preset_y = 300
-            preset_x = center_x - 130  # Adjust the x position for presets column
-            control_x = center_x + 130  # Adjust the x position for controls column
+            preset_x = center_x - 130
+            control_x = center_x + 130
 
-            # Draw "Presets" label
             texte_presets = pygame.font.Font(None, 40).render("Presets:", True, blanc)
             texte_presets_rect = texte_presets.get_rect(center=(preset_x, preset_y - 50))
             fenetre.blit(texte_presets, texte_presets_rect)
 
-            # Draw "Controls" label
             texte_controls = pygame.font.Font(None, 40).render("Controls:", True, blanc)
             texte_controls_rect = texte_controls.get_rect(center=(control_x, preset_y - 50))
             fenetre.blit(texte_controls, texte_controls_rect)
@@ -475,7 +476,7 @@ def afficher_parametres():
                 fenetre.blit(texte, texte_rect)
                 preset_y += 50
 
-            control_y = 300  # Adjusted y position for controls column
+            control_y = 300
             for i, action in enumerate(texte_controles):
                 key_name = pygame.key.name(controles[action]).upper()
                 couleur = blanc if preset_selectionne == "Personnalisé" else gris2
@@ -857,6 +858,27 @@ def dessiner_jeu(jeu, joueur_pos, camera_offset):
             joueur_pos[1] * taille_case - camera_offset[1],
             taille_case, taille_case
         ))
+
+    for ennemi in liste_ennemis:
+        x = ennemi.x * taille_case - camera_offset[0]
+        y = ennemi.y * taille_case - camera_offset[1]
+        
+        dx = ennemi.x - joueur_pos[0]
+        dy = ennemi.y - joueur_pos[1]
+        distance = math.sqrt(dx*dx + dy*dy)
+        
+        if distance * taille_case <= rayon_vision_proche:
+            if not a_mur_entre(joueur_pos, (ennemi.x, ennemi.y), jeu):
+                angle = math.degrees(math.atan2(dy, dx))
+                zombie_rotated = pygame.transform.rotate(zombie_img, angle)
+                rect_rotated = zombie_rotated.get_rect(center=(x, y))
+                virtual_surface.blit(zombie_rotated, rect_rotated)
+        elif est_dans_cone(joueur_pos, (ennemi.x, ennemi.y), angle_de_vue, cone_longueur):
+            if not a_mur_entre(joueur_pos, (ennemi.x, ennemi.y), jeu):
+                angle = math.degrees(math.atan2(dy, dx))
+                zombie_rotated = pygame.transform.rotate(zombie_img, angle)
+                rect_rotated = zombie_rotated.get_rect(center=(x, y))
+                virtual_surface.blit(zombie_rotated, rect_rotated)
 
     scaled_surface = pygame.transform.scale(virtual_surface, (largeur, hauteur))
     fenetre.blit(scaled_surface, (0, 0))
@@ -1384,7 +1406,6 @@ def dessiner_bouteilles(surface, camera_offset):
             
             surface_bouteille = pygame.Surface((taille_bouteille, taille_bouteille), pygame.SRCALPHA)
             
-            # Convert the color name to RGB values
             couleur_bouteille = pygame.Color(bouteille_verre)
             
             pygame.draw.rect(surface_bouteille, couleur_bouteille, 
@@ -1723,9 +1744,9 @@ while running:
 
     dessiner_inventaire(fenetre)
 
-    dessiner_barre_endurance(fenetre)  # Draw the endurance bar at the new position
+    dessiner_barre_endurance(fenetre)
 
-    afficher_fps(fenetre, horloge)  # Draw the FPS counter at the top left
+    afficher_fps(fenetre, horloge)
 
     resultat = deplacer_ennemis(jeu, liste_ennemis, joueur_pos)
     if resultat == "game_over":
@@ -1736,21 +1757,6 @@ while running:
             cles_collectees = 0
             liste_ennemis = initialiser_ennemis(jeu, nombre_ennemis)
             continue
-
-    for ennemi in liste_ennemis:
-        x = ennemi.x * taille_case - camera_offset[0]
-        y = ennemi.y * taille_case - camera_offset[1]
-        
-        dx = ennemi.x - joueur_pos[0]
-        dy = ennemi.y - joueur_pos[1]
-        distance = math.sqrt(dx*dx + dy*dy)
-        
-        if distance * taille_case <= rayon_vision_proche:
-            if not a_mur_entre(joueur_pos, (ennemi.x, ennemi.y), jeu):
-                pygame.draw.rect(fenetre, couleur_ennemis, (x, y, taille_case, taille_case))
-        elif est_dans_cone(joueur_pos, (ennemi.x, ennemi.y), angle_de_vue, cone_longueur):
-            if not a_mur_entre(joueur_pos, (ennemi.x, ennemi.y), jeu):
-                pygame.draw.rect(fenetre, couleur_ennemis, (x, y, taille_case, taille_case))
 
     dessiner_compteur_cles(fenetre, cles_collectees, nombre_cles)
 
